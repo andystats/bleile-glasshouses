@@ -1,0 +1,22 @@
+# Publish only the game, editable source and portable tests.
+/*
+!/.gitignore
+!/.gitattributes
+!/.nojekyll
+!/README.md
+!/THIRD_PARTY_LICENSES.txt
+!/index.html
+!/build.cjs
+!/package.json
+!/package-lock.json
+!/src/
+/src/*
+!/src/index.html
+!/src/style.css
+!/src/game-model.js
+!/src/scene.js
+!/src/app.js
+!/tests/
+/tests/*
+!/tests/model.test.cjs
+!/tests/targeting.test.cjs
