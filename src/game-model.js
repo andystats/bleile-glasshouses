@@ -125,10 +125,10 @@
     },
     rwd:{
       question:{
-        persistent:{title:'The question is defined, with one boundary to review',reason:'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',action:'Adjudicate the remaining eligibility cases'}
+        persistent:{title:'A few eligibility cases need review',reason:'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',action:'Adjudicate the remaining eligibility cases'}
       },
       design:{
-        persistent:{title:'Time zero is aligned',reason:'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',action:'Review the remaining uncertain dates'}
+        persistent:{title:'A few decision dates need review',reason:'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',action:'Review the remaining uncertain dates'}
       },
       confounding:{
         clearable:{title:'Pretreatment function can be recovered',reason:'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',action:'Recover pretreatment performance status'},
@@ -138,7 +138,7 @@
         persistent:{title:'A few subgroups have no comparison',reason:'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',action:'Seek comparison data or reassess the subgroup question'}
       },
       consistency:{
-        persistent:{title:'Treatment strategies are mostly clear',reason:'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',action:'Review the remaining treatment-version cases'}
+        persistent:{title:'A few treatment versions need review',reason:'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',action:'Review the remaining treatment-version cases'}
       },
       measurement:{
         clearable:{title:'One validation check remains',reason:'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',action:'Complete the source-record validation'},
@@ -213,7 +213,58 @@
       title:detail.title,reason,
       action:current.cleared?'Resolved within this example':detail.action,
       status:current.cleared?'Cleared in this example':current.kind==='clearable'?'Available repair':'Unresolved with these tools',
-      sizeNote:'Size follows this component’s concern level; each bug is one ding.'});
+      sizeNote:'Size follows this component’s concern level; each bug is one Bleile point.'});
+  }
+
+  // Each component points at the roadmap step where its assumption is argued.
+  const ROADMAP_BASE='https://ishuryak.github.io/causal-roadmap-primer/preview/';
+  const roadmapStep=(number,name,anchor)=>({number,name,anchor,url:ROADMAP_BASE+'#'+anchor});
+  const ROADMAP_STEPS=freeze({
+    question:roadmapStep(1,'Question','question'),
+    design:roadmapStep(1,'Target trial','trial'),
+    confounding:roadmapStep(2,'Causal diagram','dag'),
+    positivity:roadmapStep(4,'Identification','identify'),
+    consistency:roadmapStep(4,'Identification','identify'),
+    measurement:roadmapStep(3,'Observed data','observed-data'),
+    censoring:roadmapStep(4,'Identification','identify'),
+    estimation:roadmapStep(6,'Estimators','estimators'),
+    sensitivity:roadmapStep(7,'Checks','checks'),
+    transport:roadmapStep(8,'Causal verdict','causal-verdict')
+  });
+  const POINTS_NOTE='Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
+  const DEBRIEF_STATUSES=freeze([
+    {id:'repairable',heading:'Still repairable'},
+    {id:'persistent',heading:'Unresolved with these tools'},
+    {id:'repaired',heading:'Repaired this round'}
+  ]);
+  const points=n=>n+' Bleile point'+(n===1?'':'s');
+  const statusOf=bug=>bug.cleared?'repaired':bug.kind==='clearable'?'repairable':'persistent';
+  // The debrief is read from the bugs as they are now: their component, kind
+  // and cleared flag. Bugs that tell the same story share one row.
+  function debrief(state) {
+    assertState(state);
+    const source=config(state.scenario), rows=new Map();
+    const counts={repairable:0,repaired:0,persistent:0};
+    const perComponent=Object.fromEntries(componentIds.map(id=>[id,{repairable:0,repaired:0,persistent:0}]));
+    for(const bug of state.bugs){
+      const status=statusOf(bug), key=bug.component+'-'+status;
+      counts[status]++;perComponent[bug.component][status]++;
+      if(!rows.has(key)){
+        const c=COMPONENTS.find(c=>c.id===bug.component), detail=getBugDetails(bug,state);
+        rows.set(key,{component:c.id,label:c.label,status,points:0,found:0,
+          title:status==='repaired'?BUG_DETAILS[state.scenario][bug.component].clearable.action:detail.title,
+          reason:detail.reason,action:detail.action,matters:c.definition,
+          step:ROADMAP_STEPS[c.id],sameComponent:perComponent[c.id]});
+      }
+      const row=rows.get(key);row.points++;if(bug.seen)row.found++;
+    }
+    const list=[...rows.values()], complete=counts.repairable===0;
+    const summary=!complete
+      ?(counts.repaired?'You have repaired '+points(counts.repaired)+' so far. ':'No repairs yet. ')+points(counts.repairable)+' can still be repaired here.'
+      :'Every available repair is done. These records still leave '+points(counts.persistent)+' unresolved.';
+    return freeze({scenario:state.scenario,study:{title:source.title,subtitle:source.subtitle},
+      verdict:verdict(state),remaining:counts.repairable+counts.persistent,counts,complete,summary,pointsNote:POINTS_NOTE,
+      groups:DEBRIEF_STATUSES.map(s=>({...s,points:counts[s.id],rows:list.filter(r=>r.status===s.id)}))});
   }
 
   function transition(state,id,kind) {
@@ -230,11 +281,12 @@
   const reveal=(state,id)=>transition(state,id,'reveal');
   const clear=(state,id)=>transition(state,id,'clear');
   function verdict(state) {
-    const profile=scores(state);
+    assertState(state);
     if(state.scenario==='rct')return freeze({heading:'Strong starting design',subtitle:'Follow-up and applicability still matter.'});
     if(state.scenario==='poor')return freeze({heading:'Fundamental gaps remain',subtitle:'Better records cannot repair this design.'});
-    if(profile.confounding>3)return freeze({heading:'Confounding obscures the comparison',subtitle:'Recover information about treatment choice.'});
+    // Follows the confounding repair itself, not a point total.
+    if(state.bugs.some(b=>b.component==='confounding'&&b.kind==='clearable'&&!b.cleared))return freeze({heading:'Confounding obscures the comparison',subtitle:'Recover information about treatment choice.'});
     return freeze({heading:'Missing comparisons remain',subtitle:'Some subgroups still lack support; recovering confounders does not repair positivity.'});
   }
-  return freeze({COMPONENTS,SCENARIOS,initialState,total,scores,reveal,clear,verdict,getBugText,getBugDetails});
+  return freeze({COMPONENTS,SCENARIOS,ROADMAP_BASE,ROADMAP_STEPS,initialState,total,scores,reveal,clear,verdict,getBugText,getBugDetails,debrief});
 });

@@ -105,7 +105,7 @@ test('every active scenario/component has a specific immutable hover story',()=>
       assert.equal(detail.component,bug.component);
       assert.equal(detail.score,scenario.scores[bug.component]);
       assert(detail.title.length>5&&detail.reason.length>40&&detail.action.length>5);
-      assert.match(detail.sizeNote,/each bug is one ding/);
+      assert.match(detail.sizeNote,/each bug is one Bleile point/);
       assert(Object.isFrozen(detail));
     }
   }
@@ -183,4 +183,145 @@ test('persistent hover stories distinguish planned work from completed recovery 
   const measurementOnly=clearAll(initial,'measurement');
   const sensitivity=initial.bugs.find(b=>b.component==='sensitivity'&&b.kind==='persistent');
   assert.match(G.getBugDetails(sensitivity,measurementOnly).reason,/planned/);
+});
+
+const statusOf=b=>b.cleared?'repaired':b.kind==='clearable'?'repairable':'persistent';
+const group=(d,id)=>d.groups.find(g=>g.id===id);
+const row=(d,status,component)=>group(d,status).rows.find(r=>r.component===component);
+const allRows=d=>d.groups.flatMap(g=>g.rows);
+// Every row must restate the existing hover story for bugs with that component and status.
+function assertRowsMatchState(d,s){
+  const rows=allRows(d);
+  assert.equal(new Set(rows.map(r=>r.component+'|'+r.status)).size,rows.length,'one row per component and status');
+  assert.equal(rows.reduce((n,r)=>n+r.points,0),s.bugs.length);
+  for(const g of d.groups){
+    assert.equal(g.points,s.bugs.filter(b=>statusOf(b)===g.id).length);
+    for(const r of g.rows){
+      assert.equal(r.status,g.id);
+      const bugs=s.bugs.filter(b=>b.component===r.component&&statusOf(b)===r.status);
+      assert(bugs.length>0);assert.equal(r.points,bugs.length);assert.equal(r.found,bugs.filter(b=>b.seen).length);
+      const detail=G.getBugDetails(bugs[0],s),component=G.COMPONENTS.find(c=>c.id===r.component);
+      if(r.status!=='repaired')assert.equal(r.title,detail.title);
+      assert.equal(r.reason,detail.reason);assert.equal(r.action,detail.action);
+      assert.equal(r.label,component.label);assert.equal(r.matters,component.definition);
+      assert.deepEqual(r.step,G.ROADMAP_STEPS[r.component]);
+      for(const status of ['repairable','repaired','persistent'])assert.equal(r.sameComponent[status],s.bugs.filter(b=>b.component===r.component&&statusOf(b)===status).length);
+    }
+  }
+}
+
+test('initial debrief lists every study’s concerns once per component and status, with nothing repaired',()=>{
+  for(const c of G.SCENARIOS){
+    const s=G.initialState(c.id),d=G.debrief(s),clearable=Object.values(c.clearable).reduce((a,b)=>a+b,0);
+    assert.equal(d.scenario,c.id);assert.equal(d.study.title,c.title);assert.equal(d.study.subtitle,c.subtitle);
+    assert.deepEqual(d.verdict,G.verdict(s));
+    assert.deepEqual(d.counts,{repairable:clearable,repaired:0,persistent:G.total(s)-clearable});
+    assert.equal(d.remaining,G.total(s));assert.equal(d.complete,false);
+    assert.deepEqual(d.groups.map(g=>g.id),['repairable','persistent','repaired']);
+    assert.deepEqual(group(d,'repaired').rows,[]);
+    assert.match(d.summary,/No repairs yet/);
+    assert(allRows(d).every(r=>r.found===0));
+    assertRowsMatchState(d,s);
+  }
+  const trial=G.debrief(G.initialState('rct'));
+  assert.deepEqual(allRows(trial).map(r=>[r.component,r.status,r.points]),[['measurement','repairable',1],['sensitivity','repairable',1],['censoring','persistent',1],['transport','persistent',2]]);
+  assert.match(row(trial,'persistent','transport').reason,/excluded frailer patients/);
+});
+
+test('partial debrief separates repaired, still repairable and persisting points in one component',()=>{
+  const initial=G.initialState(),first=initial.bugs.find(b=>b.component==='confounding'&&b.kind==='clearable');
+  let s=G.clear(G.reveal(initial,first.id).state,first.id).state;
+  let d=G.debrief(s);
+  assert.deepEqual(d.counts,{repairable:4,repaired:1,persistent:19});
+  assert.equal(d.remaining,23);assert.equal(d.complete,false);
+  assert.match(d.summary,/repaired 1 Bleile point so far/);
+  assert.equal(row(d,'repairable','confounding').points,2);
+  assert.equal(row(d,'repaired','confounding').points,1);
+  assert.equal(row(d,'persistent','confounding').points,3);
+  assert.deepEqual(row(d,'repaired','confounding').sameComponent,{repairable:2,repaired:1,persistent:3});
+  assert.equal(row(d,'repairable','confounding').action,'Recover pretreatment performance status');
+  assert.equal(row(d,'repaired','confounding').action,'Resolved within this example');
+  assert.equal(row(d,'repaired','confounding').title,'Recover pretreatment performance status');
+  assert.match(row(d,'persistent','confounding').reason,/would still leave/);
+  assert.equal(group(d,'repaired').rows.length,1);
+  assert.equal(row(d,'repaired','positivity'),undefined);
+  assert.equal(row(d,'persistent','positivity').points,4);
+  assertRowsMatchState(d,s);
+  const coral=s.bugs.find(b=>b.component==='confounding'&&b.kind==='persistent');
+  s=G.reveal(s,coral.id).state;d=G.debrief(s);
+  assert.equal(row(d,'persistent','confounding').found,1);
+  assert.equal(row(d,'repairable','confounding').found,0);
+  assert.deepEqual(d.counts,{repairable:4,repaired:1,persistent:19});
+});
+
+test('closing debrief after all available repairs keeps the persisting rows in every study',()=>{
+  for(const [id,repaired,persistent] of [['rct',2,3],['rwd',5,19],['poor',16,78]]){
+    const s=clearAll(G.initialState(id)),d=G.debrief(s);
+    assert.equal(d.complete,true);
+    assert.deepEqual(d.counts,{repairable:0,repaired,persistent});
+    assert.equal(d.remaining,persistent);assert.equal(d.remaining,G.total(s));
+    assert.deepEqual(group(d,'repairable').rows,[]);assert.equal(group(d,'repairable').points,0);
+    assert.match(d.summary,/Every available repair is done/);
+    assert(group(d,'repaired').rows.every(r=>r.action==='Resolved within this example'));
+    assert(group(d,'persistent').rows.every(r=>r.action!=='Resolved within this example'));
+    assertRowsMatchState(d,s);
+  }
+  const trial=G.debrief(clearAll(G.initialState('rct')));
+  assert.deepEqual(group(trial,'repaired').rows.map(r=>r.component),['measurement','sensitivity']);
+  assert.deepEqual(group(trial,'persistent').rows.map(r=>r.component),['censoring','transport']);
+  assert.equal(row(trial,'persistent','measurement'),undefined);
+  const records=G.debrief(clearAll(G.initialState()));
+  assert.match(row(records,'persistent','confounding').reason,/The recovered performance status/);
+  assert.equal(row(records,'repaired','confounding').points,3);
+  assert.equal(row(records,'persistent','positivity').points,4);
+  const poor=G.debrief(clearAll(G.initialState('poor')));
+  assert.equal(row(poor,'repaired','consistency').points,4);
+  assert.equal(row(poor,'persistent','consistency').points,5);
+  assert.deepEqual(row(poor,'persistent','question').sameComponent,{repairable:0,repaired:0,persistent:10});
+  assert.match(row(poor,'persistent','design').reason,/Survival before treatment/);
+});
+
+test('debrief follows the supplied bugs’ kind and cleared flags, not the scenario preset',()=>{
+  const s=clone(G.initialState()),confounding=s.bugs.filter(b=>b.component==='confounding');
+  confounding[3].kind='clearable';confounding[4].kind='clearable';
+  for(const b of confounding.slice(0,2)){b.seen=true;b.cleared=true;}
+  const snapshot=clone(s),d=G.debrief(s);
+  assert.deepEqual(s,snapshot);
+  assert.deepEqual(d.counts,{repairable:5,repaired:2,persistent:17});
+  assert.equal(d.remaining,22);
+  assert.deepEqual(row(d,'repaired','confounding').sameComponent,{repairable:3,repaired:2,persistent:1});
+  assert.equal(row(d,'repairable','confounding').points,3);
+  assert.equal(row(d,'persistent','confounding').points,1);
+  assertRowsMatchState(d,s);
+  assert.throws(()=>G.debrief({}),/Invalid game state/);
+});
+
+test('roadmap steps use the eight live anchors and every debrief row links to its step',()=>{
+  const expected={question:[1,'question'],design:[1,'trial'],confounding:[2,'dag'],measurement:[3,'observed-data'],censoring:[4,'identify'],consistency:[4,'identify'],positivity:[4,'identify'],estimation:[6,'estimators'],sensitivity:[7,'checks'],transport:[8,'causal-verdict']};
+  assert.equal(G.ROADMAP_BASE,'https://ishuryak.github.io/causal-roadmap-primer/preview/');
+  assert.deepEqual(Object.keys(G.ROADMAP_STEPS).sort(),G.COMPONENTS.map(c=>c.id).sort());
+  for(const [component,[number,anchor]] of Object.entries(expected)){
+    const step=G.ROADMAP_STEPS[component];
+    assert.equal(step.number,number);assert.equal(step.anchor,anchor);
+    assert.equal(step.url,G.ROADMAP_BASE+'#'+anchor);assert(step.name.length>2);
+  }
+  assert.equal(new Set(Object.values(G.ROADMAP_STEPS).map(s=>s.anchor)).size,8);
+  for(const c of G.SCENARIOS)for(const r of allRows(G.debrief(G.initialState(c.id))))assert.match(r.step.url,/^https:\/\/ishuryak\.github\.io\/causal-roadmap-primer\/preview\/#[a-z-]+$/);
+});
+
+test('debrief is immutable and says plainly what Bleile points are; no visible dings or Bleiles remain',()=>{
+  const d=G.debrief(G.initialState('poor'));
+  assert(Object.isFrozen(d));assert(Object.isFrozen(d.groups));assert(Object.isFrozen(group(d,'persistent').rows[0]));assert(Object.isFrozen(d.counts));
+  assert.match(d.pointsNote,/^Bleile points are informal game tokens/);
+  assert.match(d.pointsNote,/gaps/);assert.match(d.pointsNote,/repair/);
+  assert.match(d.pointsNote,/do not measure bias or decide the verdict/);
+  const fs=require('node:fs'),path=require('node:path'),read=file=>fs.readFileSync(path.join(__dirname,'../src',file),'utf8');
+  for(const file of ['index.html','app.js','game-model.js']){
+    assert.doesNotMatch(read(file),/\bdings?\b/i,file);
+    assert.doesNotMatch(read(file),/Bleiles/,file);
+  }
+  const html=read('index.html');
+  assert.match(html,/<title>Bleile · Glasshouses<\/title>/);
+  assert.match(html,/id="profile-open"[^>]*>Review this round/);
+  assert.match(html,/Bleile points<br>remaining/);
 });

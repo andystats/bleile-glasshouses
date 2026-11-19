@@ -4,7 +4,7 @@
 
 Explore three fictional studies with a spotlight. Hover over a bug to see the concern it represents. Hold on a blue bug to apply its named repair; coral bugs remain. The corner lamp represents existing knowledge and illuminates a small patch without removing concerns.
 
-The tally is a teaching metaphor for discussing causal assumptions. Confounding and positivity retain separate scores. Finding a hidden concern never worsens the study. The numbers are illustrative, not a validated index or an estimate of bias.
+The tally of Bleile points is a teaching metaphor for discussing causal assumptions. **Review this round**, beside each verdict, lists what is still repairable, what you repaired and what persists, with links to the matching roadmap steps (the links need an internet connection). Confounding and positivity retain separate scores. Finding a hidden concern never worsens the study. The numbers are illustrative, not a validated index or an estimate of bias.
 
 The game is a companion to the [causal roadmap primer](https://ishuryak.github.io/causal-roadmap-primer/v2/) and [Susan's CAST story](https://ishuryak.github.io/cast_demo_website/tutorial/).
 

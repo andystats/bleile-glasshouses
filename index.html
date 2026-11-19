@@ -25,23 +25,50 @@
 .light-switch[aria-checked=true]{color:#f1d7a3}.light-switch[aria-checked=true] .switch-track{background:#a27a37;border-color:#e8c68d;box-shadow:0 0 14px #e8c68d18,inset 0 1px 3px #0003}
 .light-switch[aria-checked=true] .switch-thumb{transform:translateX(15px);background:#fff3d8}.light-switch[aria-checked=true] .switch-state{color:#f5d59b}
 .controls-left{align-items:center;gap:21px}.light-switch:disabled{opacity:.4}
+
+/* Each concern and its lesson remain visible while the explanation is folded. */
+#profile{overflow-y:auto;overscroll-behavior:contain}
+#profile .dialog-head{margin-bottom:12px}
+#profile .lead,#debrief-summary,#debrief-note{margin-block:6px}
+.debrief-note{color:#afc1b9;font-size:12px}
+.debrief-group{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+.debrief-group h3{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px;font-size:14px}
+.debrief-group[data-status=repairable] h3{color:var(--cyan)}
+.debrief-group[data-status=repaired] h3{color:var(--gold)}
+.debrief-group[data-status=persistent] h3{color:var(--coral)}
+.debrief-count{font-size:11px;font-weight:400;color:#afc1b9;white-space:nowrap}
+.debrief-rows{list-style:none;margin:0;padding:0}
+.debrief-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:0 12px;padding:4px 0}
+.debrief-row details{min-width:0;margin:0;border:0;padding:0}
+.debrief-row summary{color:var(--text);font-size:13px;line-height:1.45;padding-block:3px;overflow-wrap:anywhere}
+.debrief-row-count{color:#b7c9c3;font-size:11px;margin-left:3px;font-variant-numeric:tabular-nums}
+.debrief-row-count::before{content:'('}
+.debrief-row-count::after{content:')'}
+.debrief-row details p{font-size:12px;line-height:1.5;margin:6px 0 6px 14px}
+.debrief-row .debrief-action{color:var(--text)}
+.debrief-row a{font-size:12px;line-height:1.45;white-space:nowrap;padding-block:3px}
+.debrief-profile{margin-top:18px}
+@media(max-width:500px){
+ .debrief-row{display:block}
+ .debrief-row a{display:inline-block;margin-left:14px}
+}
 @media(max-width:1000px) and (min-width:601px){.light-switch{grid-template-columns:36px 24px;gap:4px 7px}.switch-label{grid-column:1/-1}.controls-left{gap:23px}.controls{padding-block:12px}}
 @media(max-width:600px){.controls-left{display:grid;grid-template-columns:1fr 1fr auto;width:100%;gap:15px;align-items:center}.light-switch{grid-template-columns:36px 24px;gap:4px 7px;font-size:10px}.switch-label{grid-column:1/-1}.controls-left #wide{font-size:9px;white-space:nowrap}.controls .focus-button{margin-top:7px}}
 </style></head>
 <body><a class="skip" href="#find-next">Skip to game controls</a><div class="shell">
 <header class="mast"><div class="brand"><span class="sunmark" aria-hidden="true">✺</span> BLEILE <span class="brand-sub">/ GLASSHOUSES</span></div><nav aria-label="Options"><button id="guide-open">Field guide</button><button id="sound" aria-pressed="false">Sound off</button><button id="restart">Reset</button></nav></header>
 <main><div class="arena"><section class="world" id="world" aria-label="Explore the study greenhouse with light"><canvas id="scene" aria-hidden="true"></canvas><div id="hotspots" aria-label="Study regions"></div>
-<div class="hud upper"><div id="world-heading"><p class="eyebrow" id="scene-number">HOUSE 02 / 03</p><h1 id="scene-title">The records</h1><p class="subtitle" id="scene-subtitle">A promising comparison. Important gaps.</p></div><div class="scoreboard"><div><strong id="score">24</strong><span>Bleiles<br>remaining</span></div><p><span id="seen">0</span> found <i>·</i> <span id="cleared">0</span> cleared</p></div></div>
+<div class="hud upper"><div id="world-heading"><p class="eyebrow" id="scene-number">HOUSE 02 / 03</p><h1 id="scene-title">The records</h1><p class="subtitle" id="scene-subtitle">A promising comparison. Important gaps.</p></div><div class="scoreboard"><div><strong id="score">24</strong><span>Bleile points<br>remaining</span></div><p><span id="seen">0</span> found <i>·</i> <span id="cleared">0</span> cleared</p></div></div>
 <div class="beam-instruction" id="beam-instruction">Inspect a bug. Hold on blue to clear.</div><div class="toast" id="toast" aria-live="polite"></div>
 <div class="hud lower"><div class="focus-readout"><span class="bug-mark" id="bug-mark" aria-hidden="true"></span><div><h2 id="focus-title">Find what is hidden.</h2><p id="focus-subtitle">Sweep the glasshouse with light.</p></div></div><div class="legend" aria-label="Bug types"><span><i class="cyan"></i>Blue · clear</span><span><i class="coral"></i>Coral · reveal</span></div></div></section>
 <aside id="inspection" class="inspect-card" aria-label="Study detail for the targeted bug" hidden><div class="inspect-head"><h2 id="inspect-name"></h2><span id="inspect-score"></span></div><p id="inspect-reason"></p><div class="inspect-response"><span id="inspect-kind"></span><strong id="inspect-action"></strong></div><p id="inspect-size" class="inspect-size"></p></aside></div>
 <div class="controls" id="controls" aria-label="Light controls"><div class="controls-left"><button id="light" class="light-switch" role="switch" aria-checked="true" aria-label="Spotlight"><span class="switch-label">Spotlight</span><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-state" aria-hidden="true">ON</span></button><button id="ambient" class="light-switch" role="switch" aria-checked="false" aria-label="Corner lamp" title="Existing knowledge lights a small corner; it does not resolve concerns."><span class="switch-label">Corner lamp</span><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span class="switch-state" aria-hidden="true">OFF</span></button><button id="wide" class="tool" aria-pressed="false">Wide beam</button></div><button id="focus" class="focus-button" aria-label="Aim at a blue bug to neutralize it" disabled><span aria-hidden="true">◉</span> <span id="focus-label">Aim at a bug</span> <kbd>SPACE</kbd></button><button id="find-next" class="tool">Find next <span aria-hidden="true">↗</span></button></div>
 <section class="houses" aria-label="Choose a study scenario" id="houses"></section>
-<div class="verdict"><div><span class="eyebrow">THE STUDY</span><h2 id="verdict-title">Confounding obscures the comparison.</h2><p id="verdict-subtitle">Recovering information cannot create missing comparisons.</p></div><button id="profile-open" class="profile-button">Roadmap profile <span aria-hidden="true">↗</span></button></div>
-<footer><span>A fictional game. Light represents investigation and repair.</span><span>0–10 dings per component · <button id="notes-open">About the score</button></span></footer></main></div>
-<dialog id="guide" aria-labelledby="guide-title"><div class="dialog-head"><span class="eyebrow">FIELD GUIDE</span><button data-close="guide" aria-label="Close field guide">Close ×</button></div><h2 id="guide-title">Bring it to light.</h2><p class="lead">Three studies. What can the light reveal?</p><p>Move the spotlight to investigate. The corner lamp represents existing knowledge: it lights a small patch inside the study, leaving other concerns hidden. It removes no dings. A targeted spotlight and a specified repair are needed to clear blue.</p><div class="type-guide"><div><span class="specimen cyan" aria-hidden="true">✳</span><h3>Blue clears.</h3><p>Available information or a specified check can address this concern.</p></div><div><span class="specimen coral" aria-hidden="true">✳</span><h3>Coral stays.</h3><p>Light exposes it. These data and tools cannot remove it.</p></div></div><p>The color describes what you can do in this scenario, not an immutable type of bias. Blue light effects stand for the specific repair named on screen. Finding a bug never creates one or worsens the study.</p><p>Hover over a bug to inspect its study context. Hold on a blue bug, or aim at it and hold Neutralize. Each press targets one bug. Moving off cancels the action. Keyboard: “Find next”, then hold Space. Touch: tap a bug, then hold Neutralize. “Wide beam” reveals more; it does not clear more.</p><details><summary>Roadmap vocabulary</summary><dl id="glossary"></dl></details><p class="dialog-note">The randomized example is deliberately well run. Randomization alone does not resolve every study concern.</p></dialog>
-<dialog id="profile" aria-labelledby="profile-title"><div class="dialog-head"><span class="eyebrow">TEN COMPONENTS</span><button data-close="profile" aria-label="Close roadmap profile">Close ×</button></div><h2 id="profile-title">Where the dings live.</h2><p class="lead" id="profile-subtitle"></p><div id="profile-bars"></div><p class="dialog-note">Confounding dings and positivity dings are distinct. Improving one cannot pay off the other.</p></dialog>
-<dialog id="notes" aria-labelledby="notes-title"><div class="dialog-head"><span class="eyebrow">ABOUT THE SCORE</span><button data-close="notes" aria-label="Close score explanation">Close ×</button></div><h2 id="notes-title">An illustrative tally.</h2><p>Each bug is one stipulated concern. Its size follows the remaining 0–10 concern score for its component. Hover to see the study-specific reason. The total includes bugs still hidden in the dark. Revealing one changes what you have found, not the study’s condition.</p><p>The observational example starts at 24. Recovering pretreatment information clears three confounding dings, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p><p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p><p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p><p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p></dialog>
+<div class="verdict"><div><span class="eyebrow">THE STUDY</span><h2 id="verdict-title">Confounding obscures the comparison.</h2><p id="verdict-subtitle">Recovering information cannot create missing comparisons.</p></div><button id="profile-open" class="profile-button" aria-haspopup="dialog">Review this round <span aria-hidden="true">↗</span></button></div>
+<footer><span>A fictional game. Light represents investigation and repair.</span><span>0–10 Bleile points per component · <button id="notes-open">About the score</button></span></footer></main></div>
+<dialog id="guide" aria-labelledby="guide-title"><div class="dialog-head"><span class="eyebrow">FIELD GUIDE</span><button data-close="guide" aria-label="Close field guide">Close ×</button></div><h2 id="guide-title">Bring it to light.</h2><p class="lead">Three studies. What can the light reveal?</p><p>Move the spotlight to investigate. The corner lamp represents existing knowledge: it lights a small patch inside the study, leaving other concerns hidden. It removes no Bleile points. A targeted spotlight and a specified repair are needed to clear blue.</p><div class="type-guide"><div><span class="specimen cyan" aria-hidden="true">✳</span><h3>Blue clears.</h3><p>Available information or a specified check can address this concern.</p></div><div><span class="specimen coral" aria-hidden="true">✳</span><h3>Coral stays.</h3><p>Light exposes it. These data and tools cannot remove it.</p></div></div><p>The color describes what you can do in this scenario, not an immutable type of bias. Blue light effects stand for the specific repair named on screen. Finding a bug never creates one or worsens the study.</p><p>Hover over a bug to inspect its study context. Hold on a blue bug, or aim at it and hold Neutralize. Each press targets one bug. Moving off cancels the action. Keyboard: “Find next”, then hold Space. Touch: tap a bug, then hold Neutralize. “Wide beam” reveals more; it does not clear more.</p><details><summary>Roadmap vocabulary</summary><dl id="glossary"></dl></details><p class="dialog-note">The randomized example is deliberately well run. Randomization alone does not resolve every study concern.</p></dialog>
+<dialog id="profile" aria-labelledby="profile-title"><div class="dialog-head"><h2 id="profile-title">Round review</h2><button data-close="profile" aria-label="Close round review">Close ×</button></div><p class="lead" id="profile-subtitle"></p><p id="debrief-verdict"></p><p id="debrief-summary"></p><p id="debrief-note" class="debrief-note"></p><div id="debrief-groups"></div><details class="debrief-profile"><summary>Bleile points by component</summary><div id="profile-bars"></div></details></dialog>
+<dialog id="notes" aria-labelledby="notes-title"><div class="dialog-head"><span class="eyebrow">ABOUT THE SCORE</span><button data-close="notes" aria-label="Close score explanation">Close ×</button></div><h2 id="notes-title">An illustrative tally.</h2><p>Each bug is one stipulated concern. Its size follows the remaining 0–10 concern score for its component. Hover to see the study-specific reason. The total includes bugs still hidden in the dark. Revealing one changes what you have found, not the study’s condition.</p><p>The observational example starts at 24. Recovering pretreatment information clears three confounding Bleile points, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p><p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p><p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p><p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p></dialog>
 <div id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div><noscript>This game needs JavaScript. Download this single HTML file and open it in a browser.</noscript>
 <script>/*! Three.js 0.187.0
 The MIT License
@@ -4426,10 +4453,10 @@ void main() {
     },
     rwd:{
       question:{
-        persistent:{title:'The question is defined, with one boundary to review',reason:'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',action:'Adjudicate the remaining eligibility cases'}
+        persistent:{title:'A few eligibility cases need review',reason:'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',action:'Adjudicate the remaining eligibility cases'}
       },
       design:{
-        persistent:{title:'Time zero is aligned',reason:'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',action:'Review the remaining uncertain dates'}
+        persistent:{title:'A few decision dates need review',reason:'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',action:'Review the remaining uncertain dates'}
       },
       confounding:{
         clearable:{title:'Pretreatment function can be recovered',reason:'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',action:'Recover pretreatment performance status'},
@@ -4439,7 +4466,7 @@ void main() {
         persistent:{title:'A few subgroups have no comparison',reason:'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',action:'Seek comparison data or reassess the subgroup question'}
       },
       consistency:{
-        persistent:{title:'Treatment strategies are mostly clear',reason:'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',action:'Review the remaining treatment-version cases'}
+        persistent:{title:'A few treatment versions need review',reason:'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',action:'Review the remaining treatment-version cases'}
       },
       measurement:{
         clearable:{title:'One validation check remains',reason:'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',action:'Complete the source-record validation'},
@@ -4514,7 +4541,58 @@ void main() {
       title:detail.title,reason,
       action:current.cleared?'Resolved within this example':detail.action,
       status:current.cleared?'Cleared in this example':current.kind==='clearable'?'Available repair':'Unresolved with these tools',
-      sizeNote:'Size follows this component’s concern level; each bug is one ding.'});
+      sizeNote:'Size follows this component’s concern level; each bug is one Bleile point.'});
+  }
+
+  // Each component points at the roadmap step where its assumption is argued.
+  const ROADMAP_BASE='https://ishuryak.github.io/causal-roadmap-primer/preview/';
+  const roadmapStep=(number,name,anchor)=>({number,name,anchor,url:ROADMAP_BASE+'#'+anchor});
+  const ROADMAP_STEPS=freeze({
+    question:roadmapStep(1,'Question','question'),
+    design:roadmapStep(1,'Target trial','trial'),
+    confounding:roadmapStep(2,'Causal diagram','dag'),
+    positivity:roadmapStep(4,'Identification','identify'),
+    consistency:roadmapStep(4,'Identification','identify'),
+    measurement:roadmapStep(3,'Observed data','observed-data'),
+    censoring:roadmapStep(4,'Identification','identify'),
+    estimation:roadmapStep(6,'Estimators','estimators'),
+    sensitivity:roadmapStep(7,'Checks','checks'),
+    transport:roadmapStep(8,'Causal verdict','causal-verdict')
+  });
+  const POINTS_NOTE='Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
+  const DEBRIEF_STATUSES=freeze([
+    {id:'repairable',heading:'Still repairable'},
+    {id:'persistent',heading:'Unresolved with these tools'},
+    {id:'repaired',heading:'Repaired this round'}
+  ]);
+  const points=n=>n+' Bleile point'+(n===1?'':'s');
+  const statusOf=bug=>bug.cleared?'repaired':bug.kind==='clearable'?'repairable':'persistent';
+  // The debrief is read from the bugs as they are now: their component, kind
+  // and cleared flag. Bugs that tell the same story share one row.
+  function debrief(state) {
+    assertState(state);
+    const source=config(state.scenario), rows=new Map();
+    const counts={repairable:0,repaired:0,persistent:0};
+    const perComponent=Object.fromEntries(componentIds.map(id=>[id,{repairable:0,repaired:0,persistent:0}]));
+    for(const bug of state.bugs){
+      const status=statusOf(bug), key=bug.component+'-'+status;
+      counts[status]++;perComponent[bug.component][status]++;
+      if(!rows.has(key)){
+        const c=COMPONENTS.find(c=>c.id===bug.component), detail=getBugDetails(bug,state);
+        rows.set(key,{component:c.id,label:c.label,status,points:0,found:0,
+          title:status==='repaired'?BUG_DETAILS[state.scenario][bug.component].clearable.action:detail.title,
+          reason:detail.reason,action:detail.action,matters:c.definition,
+          step:ROADMAP_STEPS[c.id],sameComponent:perComponent[c.id]});
+      }
+      const row=rows.get(key);row.points++;if(bug.seen)row.found++;
+    }
+    const list=[...rows.values()], complete=counts.repairable===0;
+    const summary=!complete
+      ?(counts.repaired?'You have repaired '+points(counts.repaired)+' so far. ':'No repairs yet. ')+points(counts.repairable)+' can still be repaired here.'
+      :'Every available repair is done. These records still leave '+points(counts.persistent)+' unresolved.';
+    return freeze({scenario:state.scenario,study:{title:source.title,subtitle:source.subtitle},
+      verdict:verdict(state),remaining:counts.repairable+counts.persistent,counts,complete,summary,pointsNote:POINTS_NOTE,
+      groups:DEBRIEF_STATUSES.map(s=>({...s,points:counts[s.id],rows:list.filter(r=>r.status===s.id)}))});
   }
 
   function transition(state,id,kind) {
@@ -4531,13 +4609,14 @@ void main() {
   const reveal=(state,id)=>transition(state,id,'reveal');
   const clear=(state,id)=>transition(state,id,'clear');
   function verdict(state) {
-    const profile=scores(state);
+    assertState(state);
     if(state.scenario==='rct')return freeze({heading:'Strong starting design',subtitle:'Follow-up and applicability still matter.'});
     if(state.scenario==='poor')return freeze({heading:'Fundamental gaps remain',subtitle:'Better records cannot repair this design.'});
-    if(profile.confounding>3)return freeze({heading:'Confounding obscures the comparison',subtitle:'Recover information about treatment choice.'});
+    // Follows the confounding repair itself, not a point total.
+    if(state.bugs.some(b=>b.component==='confounding'&&b.kind==='clearable'&&!b.cleared))return freeze({heading:'Confounding obscures the comparison',subtitle:'Recover information about treatment choice.'});
     return freeze({heading:'Missing comparisons remain',subtitle:'Some subgroups still lack support; recovering confounders does not repair positivity.'});
   }
-  return freeze({COMPONENTS,SCENARIOS,initialState,total,scores,reveal,clear,verdict,getBugText,getBugDetails});
+  return freeze({COMPONENTS,SCENARIOS,ROADMAP_BASE,ROADMAP_STEPS,initialState,total,scores,reveal,clear,verdict,getBugText,getBugDetails,debrief});
 });
 </script><script>(function(){
 'use strict';
@@ -4718,7 +4797,7 @@ window.BleileScene=BleileScene;
  const cardCopy={rct:['Randomized','Carefully designed'],rwd:['Observational','Recoverable information'],poor:['Poorly specified','Gaps throughout']};
  for(const [i,s] of G.SCENARIOS.entries()){
   const button=document.createElement('button');button.className='house-card';button.dataset.scenario=s.id;button.setAttribute('aria-pressed',String(s.id===state.scenario));
-  button.innerHTML=`<span class="number">0${i+1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleiles</span></span></div>`;
+  button.innerHTML=`<span class="number">0${i+1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
   button.addEventListener('click',()=>switchScenario(s.id));$('houses').append(button);
  }
  for(const c of G.COMPONENTS){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=c.short;dd.textContent=c.definition;$('glossary').append(dt,dd);const row=document.createElement('div');row.className='profile-row';row.dataset.component=c.id;row.innerHTML=`<div><span>${c.short}</span><b></b></div><div class="profile-track"><span class="profile-fill"></span></div>`;$('profile-bars').append(row);}
@@ -4732,15 +4811,60 @@ window.BleileScene=BleileScene;
  function positionInspection(){if($('inspection').hidden||!selected)return;if(innerWidth<=600){$('inspection').style.left='';$('inspection').style.top='';return;}const n=scene.getDebug().bugPositions.find(b=>b.id===selected);if(!n)return;const card=$('inspection'),world=$('world'),w=card.offsetWidth,h=card.offsetHeight,offset=26;let x=n.x+offset;if(x+w>world.clientWidth-12)x=n.x-w-offset;let y=n.y-h-22;if(y<110)y=n.y+26;x=Math.max(12,Math.min(x,world.clientWidth-w-12));y=Math.max(110,Math.min(y,world.clientHeight-h-14));card.style.left=x+'px';card.style.top=(world.offsetTop+y)+'px';}
  function showInspection(bug){const detail=G.getBugDetails(bug,state);$('inspection').dataset.kind=bug.kind;$('inspection').dataset.bug=bug.id;$('inspect-name').textContent=detail.label;$('inspect-score').textContent=detail.score+' / 10';$('inspect-reason').textContent=detail.reason;$('inspect-kind').textContent=bug.kind==='clearable'?'Blue · available repair':'Coral · reveal only';$('inspect-action').textContent=detail.action;$('inspect-size').textContent=detail.sizeNote;$('inspection').hidden=false;positionInspection();}
  function select(id){if(!id){defaultCaption();syncTabStop();return;}const bug=state.bugs.find(b=>b.id===id&&!b.cleared);if(!bug){defaultCaption();return;}dismissHint();selected=id;syncTabStop();const c=G.COMPONENTS.find(c=>c.id===bug.component),copy=G.getBugText(bug,state);$('bug-mark').dataset.kind=bug.kind;$('focus-title').textContent=c.short+' · '+(bug.kind==='clearable'?(light?'hold to neutralize':'spotlight needed'):'reveal only');$('focus-subtitle').textContent=bug.kind==='clearable'?copy.title:copy.subtitle;updateFocusButton(bug);showInspection(bug);}
- function transition(kind,id){const bug=state.bugs.find(b=>b.id===id);if(!bug)return;const result=G[kind](state,id);if(!result.event)return;state=result.state;states[state.scenario]=state;if(kind==='reveal')scheduleRender();else render();if(kind==='clear'){tone('clear');toast('−1 '+G.COMPONENTS.find(c=>c.id===bug.component).short);$('announcement').textContent=result.event.title+'. '+G.total(state)+' Bleiles remain.';if(selected===id){$('focus-title').textContent='One concern cleared.';$('focus-subtitle').textContent=G.getBugText(bug,state).title;selected=null;$('inspection').hidden=true;updateFocusButton(null);}}dismissHint();}
+ function transition(kind,id){const bug=state.bugs.find(b=>b.id===id);if(!bug)return;const result=G[kind](state,id);if(!result.event)return;state=result.state;states[state.scenario]=state;if(kind==='reveal')scheduleRender();else render();if(kind==='clear'){const done=!state.bugs.some(b=>b.kind==='clearable'&&!b.cleared);tone('clear');toast('−1 '+G.COMPONENTS.find(c=>c.id===bug.component).short+(done?' · closing debrief ready':''));$('announcement').textContent=result.event.title+'. '+points(G.total(state))+' remain'+(G.total(state)===1?'s':'')+'.'+(done?' Every available repair is done. Open Review this round for your closing debrief.':'');if(selected===id){$('focus-title').textContent='One concern cleared.';$('focus-subtitle').textContent=G.getBugText(bug,state).title;selected=null;$('inspection').hidden=true;updateFocusButton(null);}}dismissHint();}
  function scheduleRender(){if(renderQueued)return;renderQueued=true;queueMicrotask(()=>{if(renderQueued){renderQueued=false;render();}});}
- function render(){renderQueued=false;const config=G.SCENARIOS.find(s=>s.id===state.scenario),score=G.total(state),profile=G.scores(state),v=G.verdict(state);$('scene-number').textContent='HOUSE 0'+(G.SCENARIOS.indexOf(config)+1)+' / 03';$('scene-title').textContent=config.title;$('scene-subtitle').textContent=config.subtitle;$('score').textContent=score;$('seen').textContent=state.bugs.filter(b=>b.seen).length;$('cleared').textContent=state.bugs.filter(b=>b.cleared).length;$('verdict-title').textContent=v.heading;$('verdict-subtitle').textContent=v.subtitle;$('profile-subtitle').textContent=config.title+' · '+score+' remaining';for(const row of $('profile-bars').children){row.querySelector('b').textContent=profile[row.dataset.component]+' / 10';row.querySelector('.profile-fill').style.width=profile[row.dataset.component]*10+'%';}for(const b of $('houses').children){b.setAttribute('aria-pressed',String(b.dataset.scenario===state.scenario));b.querySelector('b').textContent=G.total(states[b.dataset.scenario]);}scene.setState({...state,scores:profile});syncTabStop();syncAvailability();}
+ function render(){renderQueued=false;const config=G.SCENARIOS.find(s=>s.id===state.scenario),score=G.total(state),profile=G.scores(state),v=G.verdict(state);$('scene-number').textContent='HOUSE 0'+(G.SCENARIOS.indexOf(config)+1)+' / 03';$('scene-title').textContent=config.title;$('scene-subtitle').textContent=config.subtitle;$('score').textContent=score;$('seen').textContent=state.bugs.filter(b=>b.seen).length;$('cleared').textContent=state.bugs.filter(b=>b.cleared).length;$('verdict-title').textContent=v.heading;$('verdict-subtitle').textContent=v.subtitle;if($('profile').open)renderDebrief();for(const row of $('profile-bars').children){row.querySelector('b').textContent=profile[row.dataset.component]+' / 10';row.querySelector('.profile-fill').style.width=profile[row.dataset.component]*10+'%';}for(const b of $('houses').children){b.setAttribute('aria-pressed',String(b.dataset.scenario===state.scenario));b.querySelector('b').textContent=G.total(states[b.dataset.scenario]);}scene.setState({...state,scores:profile});syncTabStop();syncAvailability();}
+ // The round review is rebuilt from the model's debrief of the current state, so it needs no WebGL.
+ function points(n){return n+' Bleile point'+(n===1?'':'s');}
+ function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node;}
+ function debriefRow(row){
+  const item=el('li','debrief-row');
+  const details=el('details');
+  const summary=el('summary');
+  const count=el('span','debrief-row-count',String(row.points));
+  count.setAttribute('aria-label',points(row.points));
+  summary.append(document.createTextNode(row.title+' '),count);
+  details.append(summary,el('p','',row.reason),el('p','',row.matters));
+  if(row.status==='repaired'){
+   const remaining=row.sameComponent.repairable+row.sameComponent.persistent;
+   if(remaining)details.append(el('p','debrief-action','The '+row.label.toLowerCase()+' component still has '+points(remaining)+' to review.'));
+  }else{
+   details.append(el('p','debrief-action',row.action));
+   if(row.found)details.append(el('p','','Found '+row.found+' of '+row.points+' in this group.'));
+  }
+  const link=el('a','','Step '+row.step.number+' · '+row.step.name);
+  link.href=row.step.url;
+  link.target='_blank';
+  link.rel='noopener';
+  link.setAttribute('aria-label','Roadmap step '+row.step.number+', '+row.step.name+', for '+row.label);
+  item.append(details,link);
+  return item;
+ }
+ function renderDebrief(){
+  const d=G.debrief(state),box=$('debrief-groups');
+  $('profile-title').textContent=d.complete?'Closing debrief':'Round review';
+  $('profile-subtitle').textContent=d.study.title+' · '+d.study.subtitle+' · '+points(d.remaining)+' remaining';
+  $('debrief-verdict').textContent=d.verdict.heading+'. '+d.verdict.subtitle;
+  $('debrief-summary').textContent=d.summary;$('debrief-note').textContent=d.pointsNote;
+  box.replaceChildren(...d.groups.map(group=>{
+   const section=el('section','debrief-group'),heading=el('h3'),id='debrief-'+group.id;
+   section.dataset.status=group.id;heading.id=id;section.setAttribute('aria-labelledby',id);
+   heading.append(el('span','',group.heading),el('span','debrief-count',points(group.points)));
+   section.append(heading);
+   if(group.rows.length){
+    const list=el('ul','debrief-rows');
+    list.append(...group.rows.map(debriefRow));
+    section.append(list);
+   }
+   return section;
+  }));
+ }
  function syncAvailability(){const unavailable=!scene.getDebug().available||$('scene').hidden;$('world').classList.toggle('graphics-paused',unavailable);for(const id of ['light','ambient','wide','find-next'])$(id).disabled=unavailable;if(unavailable){$('focus').disabled=true;$('inspection').hidden=true;}}
  function defaultCaption(){$('focus-title').textContent='Find what is hidden.';$('focus-subtitle').textContent='Sweep the glasshouse with light.';$('bug-mark').removeAttribute('data-kind');selected=null;$('inspection').hidden=true;updateFocusButton(null);}
- function switchScenario(id){setFocusing(false);state=states[id];cycle=0;defaultCaption();$('toast').classList.remove('visible');dismissHint();render();scene.setLight(light);scene.setAmbient(ambient);$('announcement').textContent=G.SCENARIOS.find(s=>s.id===id).subtitle+'. '+G.total(state)+' Bleiles.';}
+ function switchScenario(id){setFocusing(false);state=states[id];cycle=0;defaultCaption();$('toast').classList.remove('visible');dismissHint();render();scene.setLight(light);scene.setAmbient(ambient);$('announcement').textContent=G.SCENARIOS.find(s=>s.id===id).subtitle+'. '+points(G.total(state))+'.';}
  function syncSwitch(id,value){const button=$(id);button.setAttribute('aria-checked',String(Boolean(value)));button.querySelector('.switch-state').textContent=value?'ON':'OFF';}
  function setLight(value){light=value;scene.setLight(value);syncSwitch('light',value);if(!value)setFocusing(false);syncSceneSelection();}
- function setAmbient(value){ambient=Boolean(value);scene.setAmbient(ambient);syncSwitch('ambient',ambient);syncSceneSelection();$('announcement').textContent=ambient?'Corner lamp on. Existing knowledge lights nearby concerns; no dings are removed.':'Corner lamp off.';}
+ function setAmbient(value){ambient=Boolean(value);scene.setAmbient(ambient);syncSwitch('ambient',ambient);syncSceneSelection();$('announcement').textContent=ambient?'Corner lamp on. Existing knowledge lights nearby concerns; no Bleile points are removed.':'Corner lamp off.';}
  function syncSceneSelection(){const d=scene.getDebug(),id=d.targetId;if(id&&d.visibleIds.includes(id))select(id);else defaultCaption();}
  function setFocusing(value){if(value&&!light)return;focusing=value;scene.setFocusing(value);$('focus').classList.toggle('active',value);}
  function findNext(){if(!scene.getDebug().available||$('scene').hidden)return;const remaining=state.bugs.filter(b=>!b.cleared);if(!remaining.length)return;const unseen=remaining.filter(b=>!b.seen);const blue=remaining.filter(b=>b.kind==='clearable');const pool=unseen.length?unseen:blue.length?blue:remaining;const b=pool[cycle%pool.length];cycle++;setLight(true);const aimed=scene.aimAt(b.id);syncSceneSelection();if(!aimed)return;$('announcement').textContent=G.COMPONENTS.find(c=>c.id===b.component).short+'. '+(b.kind==='clearable'?'Blue. Hold Space to clear.':'Coral. Reveal only.');}
@@ -4760,11 +4884,11 @@ window.BleileScene=BleileScene;
  window.addEventListener('blur',()=>setFocusing(false));document.addEventListener('visibilitychange',()=>{if(document.hidden)setFocusing(false);});
  $('sound').addEventListener('click',()=>{sound=!sound;$('sound').textContent=sound?'Sound on':'Sound off';$('sound').setAttribute('aria-pressed',String(sound));if(sound)tone('start');});
  $('restart').addEventListener('click',()=>{states[state.scenario]=G.initialState(state.scenario);scene.setState({scenario:'reset',bugs:[]});switchScenario(state.scenario);$('announcement').textContent='This house has been reset.';});
- for(const [button,dialog] of [['guide-open','guide'],['profile-open','profile'],['notes-open','notes']]){$(button).addEventListener('click',()=>{setFocusing(false);$(dialog).showModal();});}
+ for(const [button,dialog] of [['guide-open','guide'],['profile-open','profile'],['notes-open','notes']]){$(button).addEventListener('click',()=>{setFocusing(false);if(dialog==='profile')renderDebrief();$(dialog).showModal();$(dialog).scrollTop=0;});}
  for(const b of document.querySelectorAll('[data-close]'))b.addEventListener('click',()=>$(b.dataset.close).close());
  for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});
  render();
  hintTimer=setTimeout(dismissHint,6000);
- window.BleileApp={getState:()=>state,getSceneDebug:()=>scene.getDebug(),aimAt:id=>{setLight(true);scene.aimAt(id);},setLight,setAmbient,setFocusing,switchScenario};
+ window.BleileApp={getState:()=>state,getDebrief:()=>G.debrief(state),getSceneDebug:()=>scene.getDebug(),aimAt:id=>{setLight(true);scene.aimAt(id);},setLight,setAmbient,setFocusing,switchScenario};
 })();
 </script></body></html>

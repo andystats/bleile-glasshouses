@@ -7,7 +7,7 @@
  const cardCopy={rct:['Randomized','Carefully designed'],rwd:['Observational','Recoverable information'],poor:['Poorly specified','Gaps throughout']};
  for(const [i,s] of G.SCENARIOS.entries()){
   const button=document.createElement('button');button.className='house-card';button.dataset.scenario=s.id;button.setAttribute('aria-pressed',String(s.id===state.scenario));
-  button.innerHTML=`<span class="number">0${i+1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleiles</span></span></div>`;
+  button.innerHTML=`<span class="number">0${i+1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
   button.addEventListener('click',()=>switchScenario(s.id));$('houses').append(button);
  }
  for(const c of G.COMPONENTS){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=c.short;dd.textContent=c.definition;$('glossary').append(dt,dd);const row=document.createElement('div');row.className='profile-row';row.dataset.component=c.id;row.innerHTML=`<div><span>${c.short}</span><b></b></div><div class="profile-track"><span class="profile-fill"></span></div>`;$('profile-bars').append(row);}
@@ -21,15 +21,60 @@
  function positionInspection(){if($('inspection').hidden||!selected)return;if(innerWidth<=600){$('inspection').style.left='';$('inspection').style.top='';return;}const n=scene.getDebug().bugPositions.find(b=>b.id===selected);if(!n)return;const card=$('inspection'),world=$('world'),w=card.offsetWidth,h=card.offsetHeight,offset=26;let x=n.x+offset;if(x+w>world.clientWidth-12)x=n.x-w-offset;let y=n.y-h-22;if(y<110)y=n.y+26;x=Math.max(12,Math.min(x,world.clientWidth-w-12));y=Math.max(110,Math.min(y,world.clientHeight-h-14));card.style.left=x+'px';card.style.top=(world.offsetTop+y)+'px';}
  function showInspection(bug){const detail=G.getBugDetails(bug,state);$('inspection').dataset.kind=bug.kind;$('inspection').dataset.bug=bug.id;$('inspect-name').textContent=detail.label;$('inspect-score').textContent=detail.score+' / 10';$('inspect-reason').textContent=detail.reason;$('inspect-kind').textContent=bug.kind==='clearable'?'Blue · available repair':'Coral · reveal only';$('inspect-action').textContent=detail.action;$('inspect-size').textContent=detail.sizeNote;$('inspection').hidden=false;positionInspection();}
  function select(id){if(!id){defaultCaption();syncTabStop();return;}const bug=state.bugs.find(b=>b.id===id&&!b.cleared);if(!bug){defaultCaption();return;}dismissHint();selected=id;syncTabStop();const c=G.COMPONENTS.find(c=>c.id===bug.component),copy=G.getBugText(bug,state);$('bug-mark').dataset.kind=bug.kind;$('focus-title').textContent=c.short+' · '+(bug.kind==='clearable'?(light?'hold to neutralize':'spotlight needed'):'reveal only');$('focus-subtitle').textContent=bug.kind==='clearable'?copy.title:copy.subtitle;updateFocusButton(bug);showInspection(bug);}
- function transition(kind,id){const bug=state.bugs.find(b=>b.id===id);if(!bug)return;const result=G[kind](state,id);if(!result.event)return;state=result.state;states[state.scenario]=state;if(kind==='reveal')scheduleRender();else render();if(kind==='clear'){tone('clear');toast('−1 '+G.COMPONENTS.find(c=>c.id===bug.component).short);$('announcement').textContent=result.event.title+'. '+G.total(state)+' Bleiles remain.';if(selected===id){$('focus-title').textContent='One concern cleared.';$('focus-subtitle').textContent=G.getBugText(bug,state).title;selected=null;$('inspection').hidden=true;updateFocusButton(null);}}dismissHint();}
+ function transition(kind,id){const bug=state.bugs.find(b=>b.id===id);if(!bug)return;const result=G[kind](state,id);if(!result.event)return;state=result.state;states[state.scenario]=state;if(kind==='reveal')scheduleRender();else render();if(kind==='clear'){const done=!state.bugs.some(b=>b.kind==='clearable'&&!b.cleared);tone('clear');toast('−1 '+G.COMPONENTS.find(c=>c.id===bug.component).short+(done?' · closing debrief ready':''));$('announcement').textContent=result.event.title+'. '+points(G.total(state))+' remain'+(G.total(state)===1?'s':'')+'.'+(done?' Every available repair is done. Open Review this round for your closing debrief.':'');if(selected===id){$('focus-title').textContent='One concern cleared.';$('focus-subtitle').textContent=G.getBugText(bug,state).title;selected=null;$('inspection').hidden=true;updateFocusButton(null);}}dismissHint();}
  function scheduleRender(){if(renderQueued)return;renderQueued=true;queueMicrotask(()=>{if(renderQueued){renderQueued=false;render();}});}
- function render(){renderQueued=false;const config=G.SCENARIOS.find(s=>s.id===state.scenario),score=G.total(state),profile=G.scores(state),v=G.verdict(state);$('scene-number').textContent='HOUSE 0'+(G.SCENARIOS.indexOf(config)+1)+' / 03';$('scene-title').textContent=config.title;$('scene-subtitle').textContent=config.subtitle;$('score').textContent=score;$('seen').textContent=state.bugs.filter(b=>b.seen).length;$('cleared').textContent=state.bugs.filter(b=>b.cleared).length;$('verdict-title').textContent=v.heading;$('verdict-subtitle').textContent=v.subtitle;$('profile-subtitle').textContent=config.title+' · '+score+' remaining';for(const row of $('profile-bars').children){row.querySelector('b').textContent=profile[row.dataset.component]+' / 10';row.querySelector('.profile-fill').style.width=profile[row.dataset.component]*10+'%';}for(const b of $('houses').children){b.setAttribute('aria-pressed',String(b.dataset.scenario===state.scenario));b.querySelector('b').textContent=G.total(states[b.dataset.scenario]);}scene.setState({...state,scores:profile});syncTabStop();syncAvailability();}
+ function render(){renderQueued=false;const config=G.SCENARIOS.find(s=>s.id===state.scenario),score=G.total(state),profile=G.scores(state),v=G.verdict(state);$('scene-number').textContent='HOUSE 0'+(G.SCENARIOS.indexOf(config)+1)+' / 03';$('scene-title').textContent=config.title;$('scene-subtitle').textContent=config.subtitle;$('score').textContent=score;$('seen').textContent=state.bugs.filter(b=>b.seen).length;$('cleared').textContent=state.bugs.filter(b=>b.cleared).length;$('verdict-title').textContent=v.heading;$('verdict-subtitle').textContent=v.subtitle;if($('profile').open)renderDebrief();for(const row of $('profile-bars').children){row.querySelector('b').textContent=profile[row.dataset.component]+' / 10';row.querySelector('.profile-fill').style.width=profile[row.dataset.component]*10+'%';}for(const b of $('houses').children){b.setAttribute('aria-pressed',String(b.dataset.scenario===state.scenario));b.querySelector('b').textContent=G.total(states[b.dataset.scenario]);}scene.setState({...state,scores:profile});syncTabStop();syncAvailability();}
+ // The round review is rebuilt from the model's debrief of the current state, so it needs no WebGL.
+ function points(n){return n+' Bleile point'+(n===1?'':'s');}
+ function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node;}
+ function debriefRow(row){
+  const item=el('li','debrief-row');
+  const details=el('details');
+  const summary=el('summary');
+  const count=el('span','debrief-row-count',String(row.points));
+  count.setAttribute('aria-label',points(row.points));
+  summary.append(document.createTextNode(row.title+' '),count);
+  details.append(summary,el('p','',row.reason),el('p','',row.matters));
+  if(row.status==='repaired'){
+   const remaining=row.sameComponent.repairable+row.sameComponent.persistent;
+   if(remaining)details.append(el('p','debrief-action','The '+row.label.toLowerCase()+' component still has '+points(remaining)+' to review.'));
+  }else{
+   details.append(el('p','debrief-action',row.action));
+   if(row.found)details.append(el('p','','Found '+row.found+' of '+row.points+' in this group.'));
+  }
+  const link=el('a','','Step '+row.step.number+' · '+row.step.name);
+  link.href=row.step.url;
+  link.target='_blank';
+  link.rel='noopener';
+  link.setAttribute('aria-label','Roadmap step '+row.step.number+', '+row.step.name+', for '+row.label);
+  item.append(details,link);
+  return item;
+ }
+ function renderDebrief(){
+  const d=G.debrief(state),box=$('debrief-groups');
+  $('profile-title').textContent=d.complete?'Closing debrief':'Round review';
+  $('profile-subtitle').textContent=d.study.title+' · '+d.study.subtitle+' · '+points(d.remaining)+' remaining';
+  $('debrief-verdict').textContent=d.verdict.heading+'. '+d.verdict.subtitle;
+  $('debrief-summary').textContent=d.summary;$('debrief-note').textContent=d.pointsNote;
+  box.replaceChildren(...d.groups.map(group=>{
+   const section=el('section','debrief-group'),heading=el('h3'),id='debrief-'+group.id;
+   section.dataset.status=group.id;heading.id=id;section.setAttribute('aria-labelledby',id);
+   heading.append(el('span','',group.heading),el('span','debrief-count',points(group.points)));
+   section.append(heading);
+   if(group.rows.length){
+    const list=el('ul','debrief-rows');
+    list.append(...group.rows.map(debriefRow));
+    section.append(list);
+   }
+   return section;
+  }));
+ }
  function syncAvailability(){const unavailable=!scene.getDebug().available||$('scene').hidden;$('world').classList.toggle('graphics-paused',unavailable);for(const id of ['light','ambient','wide','find-next'])$(id).disabled=unavailable;if(unavailable){$('focus').disabled=true;$('inspection').hidden=true;}}
  function defaultCaption(){$('focus-title').textContent='Find what is hidden.';$('focus-subtitle').textContent='Sweep the glasshouse with light.';$('bug-mark').removeAttribute('data-kind');selected=null;$('inspection').hidden=true;updateFocusButton(null);}
- function switchScenario(id){setFocusing(false);state=states[id];cycle=0;defaultCaption();$('toast').classList.remove('visible');dismissHint();render();scene.setLight(light);scene.setAmbient(ambient);$('announcement').textContent=G.SCENARIOS.find(s=>s.id===id).subtitle+'. '+G.total(state)+' Bleiles.';}
+ function switchScenario(id){setFocusing(false);state=states[id];cycle=0;defaultCaption();$('toast').classList.remove('visible');dismissHint();render();scene.setLight(light);scene.setAmbient(ambient);$('announcement').textContent=G.SCENARIOS.find(s=>s.id===id).subtitle+'. '+points(G.total(state))+'.';}
  function syncSwitch(id,value){const button=$(id);button.setAttribute('aria-checked',String(Boolean(value)));button.querySelector('.switch-state').textContent=value?'ON':'OFF';}
  function setLight(value){light=value;scene.setLight(value);syncSwitch('light',value);if(!value)setFocusing(false);syncSceneSelection();}
- function setAmbient(value){ambient=Boolean(value);scene.setAmbient(ambient);syncSwitch('ambient',ambient);syncSceneSelection();$('announcement').textContent=ambient?'Corner lamp on. Existing knowledge lights nearby concerns; no dings are removed.':'Corner lamp off.';}
+ function setAmbient(value){ambient=Boolean(value);scene.setAmbient(ambient);syncSwitch('ambient',ambient);syncSceneSelection();$('announcement').textContent=ambient?'Corner lamp on. Existing knowledge lights nearby concerns; no Bleile points are removed.':'Corner lamp off.';}
  function syncSceneSelection(){const d=scene.getDebug(),id=d.targetId;if(id&&d.visibleIds.includes(id))select(id);else defaultCaption();}
  function setFocusing(value){if(value&&!light)return;focusing=value;scene.setFocusing(value);$('focus').classList.toggle('active',value);}
  function findNext(){if(!scene.getDebug().available||$('scene').hidden)return;const remaining=state.bugs.filter(b=>!b.cleared);if(!remaining.length)return;const unseen=remaining.filter(b=>!b.seen);const blue=remaining.filter(b=>b.kind==='clearable');const pool=unseen.length?unseen:blue.length?blue:remaining;const b=pool[cycle%pool.length];cycle++;setLight(true);const aimed=scene.aimAt(b.id);syncSceneSelection();if(!aimed)return;$('announcement').textContent=G.COMPONENTS.find(c=>c.id===b.component).short+'. '+(b.kind==='clearable'?'Blue. Hold Space to clear.':'Coral. Reveal only.');}
@@ -49,10 +94,10 @@
  window.addEventListener('blur',()=>setFocusing(false));document.addEventListener('visibilitychange',()=>{if(document.hidden)setFocusing(false);});
  $('sound').addEventListener('click',()=>{sound=!sound;$('sound').textContent=sound?'Sound on':'Sound off';$('sound').setAttribute('aria-pressed',String(sound));if(sound)tone('start');});
  $('restart').addEventListener('click',()=>{states[state.scenario]=G.initialState(state.scenario);scene.setState({scenario:'reset',bugs:[]});switchScenario(state.scenario);$('announcement').textContent='This house has been reset.';});
- for(const [button,dialog] of [['guide-open','guide'],['profile-open','profile'],['notes-open','notes']]){$(button).addEventListener('click',()=>{setFocusing(false);$(dialog).showModal();});}
+ for(const [button,dialog] of [['guide-open','guide'],['profile-open','profile'],['notes-open','notes']]){$(button).addEventListener('click',()=>{setFocusing(false);if(dialog==='profile')renderDebrief();$(dialog).showModal();$(dialog).scrollTop=0;});}
  for(const b of document.querySelectorAll('[data-close]'))b.addEventListener('click',()=>$(b.dataset.close).close());
  for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});
  render();
  hintTimer=setTimeout(dismissHint,6000);
- window.BleileApp={getState:()=>state,getSceneDebug:()=>scene.getDebug(),aimAt:id=>{setLight(true);scene.aimAt(id);},setLight,setAmbient,setFocusing,switchScenario};
+ window.BleileApp={getState:()=>state,getDebrief:()=>G.debrief(state),getSceneDebug:()=>scene.getDebug(),aimAt:id=>{setLight(true);scene.aimAt(id);},setLight,setAmbient,setFocusing,switchScenario};
 })();
