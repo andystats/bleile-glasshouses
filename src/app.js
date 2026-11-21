@@ -19,17 +19,12 @@
     renderQueued = false;
   const icon =
     '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 26 29 9l26 10v32L31 59 9 49Z M9 26l22 10 24-17 M31 36v23 M29 9l2 27 M9 26v23 M18 18l23 9v28 M40 13l-19 18v23 M9 39l22 10 24-16"/><path d="m18 46 10 4v-9l-10-4z" opacity=".3"/></svg>';
-  const cardCopy = {
-    rct: ['Randomized', 'Carefully designed'],
-    rwd: ['Observational', 'Recoverable information'],
-    poor: ['Poorly specified', 'Gaps throughout'],
-  };
   for (const [i, s] of G.SCENARIOS.entries()) {
     const button = document.createElement('button');
     button.className = 'house-card';
     button.dataset.scenario = s.id;
     button.setAttribute('aria-pressed', String(s.id === state.scenario));
-    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
+    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.card.heading}</h3><p>${s.card.subtitle}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
     button.addEventListener('click', () => switchScenario(s.id));
     $('houses').append(button);
   }
@@ -239,7 +234,10 @@
       profile = G.scores(state),
       v = G.verdict(state);
     $('scene-number').textContent =
-      'HOUSE 0' + (G.SCENARIOS.indexOf(config) + 1) + ' / 03';
+      'HOUSE 0' +
+      (G.SCENARIOS.indexOf(config) + 1) +
+      ' / 0' +
+      G.SCENARIOS.length;
     $('scene-title').textContent = config.title;
     $('scene-subtitle').textContent = config.subtitle;
     $('score').textContent = score;
@@ -261,7 +259,11 @@
       );
       b.querySelector('b').textContent = G.total(states[b.dataset.scenario]);
     }
-    scene.setState({ ...state, scores: profile });
+    scene.setState({
+      ...state,
+      scores: profile,
+      background: config.background,
+    });
     syncTabStop();
     syncAvailability();
   }

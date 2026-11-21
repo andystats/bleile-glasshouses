@@ -5614,9 +5614,551 @@ void main() {
     <script>(function (root, factory) {
   'use strict';
   const api = factory();
-  root.BleileGame = api;
+  root.BleileContent = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  // Everything the game says about the components and the three studies is
+  // here. game-model.js holds the rules.
+  const ROADMAP_BASE =
+    'https://ishuryak.github.io/causal-roadmap-primer/preview/';
+
+  // Each component points at the roadmap step where its assumption is argued.
+  // Its captions are the general spotlight text for a blue (clearable) and a
+  // coral (persistent) bug.
+  const COMPONENTS = [
+    {
+      id: 'question',
+      label: 'Research question',
+      short: 'Question',
+      definition:
+        'Specify the people, treatment strategies, outcome and time horizon you want to compare.',
+      step: { number: 1, name: 'Question', anchor: 'question' },
+      captions: {
+        clearable: {
+          title: 'Clarify the question',
+          subtitle: 'Specify the intended comparison.',
+        },
+        persistent: {
+          title: 'The question is underspecified',
+          subtitle: 'Needs a clearer target.',
+        },
+      },
+    },
+    {
+      id: 'design',
+      label: 'Study design',
+      short: 'Design',
+      definition:
+        'Align eligibility, treatment assignment and follow-up so the records represent the comparison you intended.',
+      step: { number: 1, name: 'Target trial', anchor: 'trial' },
+      captions: {
+        clearable: {
+          title: 'Check the study timeline',
+          subtitle: 'Align eligibility and follow-up.',
+        },
+        persistent: {
+          title: 'A gap in the study design',
+          subtitle: 'Needs a different design or argument.',
+        },
+      },
+    },
+    {
+      id: 'confounding',
+      label: 'Confounding',
+      short: 'Confounding',
+      definition:
+        'Common causes of treatment choice and survival can make the groups differ before treatment. Important causes may be unrecorded.',
+      step: { number: 2, name: 'Causal diagram', anchor: 'dag' },
+      captions: {
+        clearable: {
+          title: 'Recover pretreatment records',
+          subtitle: 'An important common cause is now recorded.',
+        },
+        persistent: {
+          title: 'Unmeasured common causes',
+          subtitle: 'Needs more evidence or stronger assumptions.',
+        },
+      },
+    },
+    {
+      id: 'positivity',
+      label: 'Treatment overlap',
+      short: 'Positivity',
+      definition:
+        'Both treatment options must be possible for the people in the question. Sparse or missing comparisons leave parts of that question unsupported.',
+      step: { number: 4, name: 'Identification', anchor: 'identify' },
+      captions: {
+        clearable: {
+          title: 'Review the comparison',
+          subtitle: 'A different question needs its own assessment.',
+        },
+        persistent: {
+          title: 'Missing treatment comparisons',
+          subtitle: 'Needs comparison data or a new question.',
+        },
+      },
+    },
+    {
+      id: 'consistency',
+      label: 'Treatment definition',
+      short: 'Consistency',
+      definition:
+        'The treatment labels must correspond to the strategies being compared, with relevant versions of treatment specified.',
+      step: { number: 4, name: 'Identification', anchor: 'identify' },
+      captions: {
+        clearable: {
+          title: 'Resolve treatment coding',
+          subtitle: 'Clarify the recorded treatment versions.',
+        },
+        persistent: {
+          title: 'Ambiguous treatment versions',
+          subtitle: 'Needs a defensible treatment definition.',
+        },
+      },
+    },
+    {
+      id: 'measurement',
+      label: 'Measurement',
+      short: 'Measurement',
+      definition:
+        'Check that health, treatment and outcomes are recorded accurately, at the right times and with usable definitions.',
+      step: { number: 3, name: 'Observed data', anchor: 'observed-data' },
+      captions: {
+        clearable: {
+          title: 'Validate the measurements',
+          subtitle: 'Check source records and timing.',
+        },
+        persistent: {
+          title: 'Unresolved measurement error',
+          subtitle: 'Needs validation beyond these records.',
+        },
+      },
+    },
+    {
+      id: 'censoring',
+      label: 'Follow-up',
+      short: 'Censoring',
+      definition:
+        'When outcomes become unavailable, explain how the remaining records can represent those lost to follow-up.',
+      step: { number: 4, name: 'Identification', anchor: 'identify' },
+      captions: {
+        clearable: {
+          title: 'Recover follow-up',
+          subtitle: 'Retrieve the available outcome records.',
+        },
+        persistent: {
+          title: 'Incomplete follow-up',
+          subtitle: 'Needs evidence about the people lost.',
+        },
+      },
+    },
+    {
+      id: 'estimation',
+      label: 'Estimation',
+      short: 'Estimation',
+      definition:
+        'Choose an estimator for the target quantity and check its fit, stability and uncertainty.',
+      step: { number: 6, name: 'Estimators', anchor: 'estimators' },
+      captions: {
+        clearable: {
+          title: 'Check the analysis',
+          subtitle: 'Examine fit and uncertainty.',
+        },
+        persistent: {
+          title: 'Uncertain analytic fit',
+          subtitle: 'Needs further model checks.',
+        },
+      },
+    },
+    {
+      id: 'sensitivity',
+      label: 'Sensitivity analysis',
+      short: 'Sensitivity',
+      definition:
+        'Ask how the conclusion changes under plausible departures from the assumptions. A reassuring check covers only the departures examined.',
+      step: { number: 7, name: 'Checks', anchor: 'checks' },
+      captions: {
+        clearable: {
+          title: 'Test the bias scenarios',
+          subtitle: 'Only the specified departures are checked.',
+        },
+        persistent: {
+          title: 'Untested departures remain',
+          subtitle: 'Needs a broader sensitivity argument.',
+        },
+      },
+    },
+    {
+      id: 'transport',
+      label: 'Applicability elsewhere',
+      short: 'Transport',
+      definition:
+        'Applying a result to different people or settings needs an argument about which differences matter for the effect.',
+      step: { number: 8, name: 'Causal verdict', anchor: 'causal-verdict' },
+      captions: {
+        clearable: {
+          title: 'Check the new setting',
+          subtitle: 'Reassess who the result can describe.',
+        },
+        persistent: {
+          title: 'A different population',
+          subtitle: 'Needs a separate transport argument.',
+        },
+      },
+    },
+  ];
+
+  // These profiles and recoveries are stipulated teaching scenarios. A color
+  // describes what the available investigation can address, not a universal
+  // property of a causal assumption or a measured amount of bias.
+  //
+  // Each study lists its concerns by component and color. The stories are
+  // fictional facts of these three worked examples.
+  //   points: the number of bugs telling this story, one Bleile point each.
+  //     A component's score is the sum over both colors, at most 10.
+  //   title, reason, action: the inspection card and the round review.
+  //   subtitle (optional): with the title, replaces the component's caption.
+  //   reasonBeforeRepair (optional, coral only): replaces the reason while a
+  //     blue bug of the same component is still uncleared.
+  // A study shows the first verdict that applies. A verdict with untilRepaired
+  // follows that component's repair itself, not a point total; the last
+  // verdict always applies.
+  const SCENARIOS = [
+    {
+      id: 'rct',
+      title: 'The trial',
+      subtitle: 'A well-run randomized study',
+      card: { heading: 'Randomized', subtitle: 'Carefully designed' },
+      background: '#081923',
+      verdicts: [
+        {
+          heading: 'Strong starting design',
+          subtitle: 'Follow-up and applicability still matter.',
+        },
+      ],
+      concerns: {
+        measurement: {
+          clearable: {
+            points: 1,
+            title: 'A survival-code discrepancy',
+            reason:
+              'One-year survival codes do not fully agree with the source records. The source audit can resolve the discrepancy in this trial.',
+            action: 'Audit the survival codes',
+          },
+        },
+        censoring: {
+          persistent: {
+            points: 1,
+            title: 'A few outcomes are unavailable',
+            reason:
+              'Some randomized patients left follow-up before one year. Their survival outcomes are not in the available records.',
+            action: 'Obtain follow-up or justify the missingness assumption',
+          },
+        },
+        sensitivity: {
+          clearable: {
+            points: 1,
+            title: 'The missing-outcome check is unfinished',
+            reason:
+              'The trial has not yet checked its specified missing-outcome scenarios. The stipulated check is reassuring within those bounds.',
+            action: 'Check the specified scenarios',
+          },
+        },
+        transport: {
+          persistent: {
+            points: 2,
+            title: 'The trial enrolled a selected population',
+            reason:
+              'This trial excluded frailer patients treated in routine care. Randomization within the trial does not establish the effect for those patients.',
+            action: 'Build a separate transport argument',
+          },
+        },
+      },
+    },
+    {
+      id: 'rwd',
+      title: 'The records',
+      subtitle: 'A carefully designed observational study',
+      card: { heading: 'Observational', subtitle: 'Recoverable information' },
+      background: '#07121b',
+      verdicts: [
+        {
+          untilRepaired: 'confounding',
+          heading: 'Confounding obscures the comparison',
+          subtitle: 'Recover information about treatment choice.',
+        },
+        {
+          heading: 'Missing comparisons remain',
+          subtitle:
+            'Some subgroups still lack support; recovering confounders does not repair positivity.',
+        },
+      ],
+      concerns: {
+        question: {
+          persistent: {
+            points: 1,
+            title: 'A few eligibility cases need review',
+            subtitle: 'The population and one-year contrast are specified.',
+            reason:
+              'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',
+            action: 'Adjudicate the remaining eligibility cases',
+          },
+        },
+        design: {
+          persistent: {
+            points: 1,
+            title: 'A few decision dates need review',
+            subtitle: 'The study otherwise aligns time zero.',
+            reason:
+              'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',
+            action: 'Review the remaining uncertain dates',
+          },
+        },
+        confounding: {
+          clearable: {
+            points: 3,
+            title: 'Pretreatment function can be recovered',
+            reason:
+              'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',
+            action: 'Recover pretreatment performance status',
+          },
+          persistent: {
+            points: 3,
+            title: 'Other common causes are unrecorded',
+            reason:
+              'The recovered performance status does not capture every shared cause of treatment choice and survival. Other clinically relevant baseline differences remain unrecorded.',
+            reasonBeforeRepair:
+              'Recovering performance status would still leave other shared causes of treatment choice and survival unresolved. Other clinically relevant baseline differences remain unrecorded.',
+            action: 'Seek additional evidence or justify the assumption',
+          },
+        },
+        positivity: {
+          persistent: {
+            points: 4,
+            title: 'A few subgroups have no comparison',
+            reason:
+              'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',
+            action: 'Seek comparison data or reassess the subgroup question',
+          },
+        },
+        consistency: {
+          persistent: {
+            points: 1,
+            title: 'A few treatment versions need review',
+            subtitle: 'The treatment strategies are mostly consistent.',
+            reason:
+              'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',
+            action: 'Review the remaining treatment-version cases',
+          },
+        },
+        measurement: {
+          clearable: {
+            points: 1,
+            title: 'One validation check remains',
+            reason:
+              'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',
+            action: 'Complete the source-record validation',
+          },
+          persistent: {
+            points: 2,
+            title: 'A limited validation gap remains',
+            reason:
+              'Most health and survival records have been checked, but a small set lacks source documentation. Auditing the available charts does not validate those missing sources.',
+            action: 'Obtain validation for the remaining records',
+          },
+        },
+        censoring: {
+          persistent: {
+            points: 2,
+            title: 'Follow-up is nearly complete',
+            reason:
+              'One-year survival is known for most patients. A small group left follow-up, and the remaining records do not establish how their outcomes compare with those retained.',
+            action: 'Recover the missing outcomes or assess their impact',
+          },
+        },
+        estimation: {
+          persistent: {
+            points: 2,
+            title: 'The main analysis has been checked',
+            reason:
+              'Basic fit and uncertainty checks are complete for the main comparison. Estimates in small subgroups remain sensitive to modeling choices.',
+            action: 'Check stability in the sparse subgroups',
+          },
+        },
+        sensitivity: {
+          clearable: {
+            points: 1,
+            title: 'Specified bias scenarios are unchecked',
+            reason:
+              'The analysis has not yet examined its prespecified departures from the assumptions. In this example the checked range gives reassuring results.',
+            action: 'Examine the specified bias scenarios',
+          },
+          persistent: {
+            points: 1,
+            title: 'Other departures remain untested',
+            reason:
+              'The reassuring sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
+            reasonBeforeRepair:
+              'The planned sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
+            action: 'Broaden the sensitivity argument',
+          },
+        },
+        transport: {
+          persistent: {
+            points: 2,
+            title: 'Transfer beyond these clinics needs review',
+            reason:
+              'These records come from selected clinics with a defined study population. Applying the one-year comparison in other settings still needs evidence about relevant differences.',
+            action: 'Assess the intended new population',
+          },
+        },
+      },
+    },
+    {
+      id: 'poor',
+      title: 'The tangle',
+      subtitle: 'A poorly specified and poorly designed study',
+      card: { heading: 'Poorly specified', subtitle: 'Gaps throughout' },
+      background: '#10111c',
+      verdicts: [
+        {
+          heading: 'Fundamental gaps remain',
+          subtitle: 'Better records cannot repair this design.',
+        },
+      ],
+      concerns: {
+        question: {
+          persistent: {
+            points: 10,
+            title: 'The study never settled its target',
+            reason:
+              'Eligibility, Treatment X, usual care and the start of the one-year survival window were chosen inconsistently. The reported comparison has no stable target.',
+            action: 'Specify a coherent question and reassess',
+          },
+        },
+        design: {
+          persistent: {
+            points: 10,
+            title: 'Treatment is assigned after follow-up starts',
+            reason:
+              'Patients are labelled treated if they later receive Treatment X, while follow-up starts at clinic entry. Survival before treatment is therefore built into group assignment.',
+            action: 'Redesign time zero and treatment assignment',
+          },
+        },
+        confounding: {
+          clearable: {
+            points: 6,
+            title: 'Baseline charts were left unused',
+            reason:
+              'Pretreatment performance status is missing from the analysis even though some charts contain it. Recovering it can reduce this concern without repairing the study timeline.',
+            action: 'Recover the available baseline charts',
+          },
+          persistent: {
+            points: 4,
+            title: 'Treatment decisions remain poorly explained',
+            reason:
+              'Important reasons for choosing Treatment X were never recorded. Recovering the available charts leaves other common causes of treatment and survival unresolved.',
+            action: 'Obtain new evidence about treatment decisions',
+          },
+        },
+        positivity: {
+          persistent: {
+            points: 10,
+            title: 'The groups scarcely overlap',
+            reason:
+              'Treatment X is concentrated in patient profiles that have no usual-care counterparts in these records. Better coding cannot supply those missing comparisons.',
+            action: 'Collect comparison data or redefine the question',
+          },
+        },
+        consistency: {
+          clearable: {
+            points: 4,
+            title: 'Several treatment codes can be untangled',
+            reason:
+              'Some entries combine different Treatment X regimens, but source prescriptions identify their dose and schedule. These available records can resolve part of the ambiguity.',
+            action: 'Recover dose and schedule from prescriptions',
+          },
+          persistent: {
+            points: 5,
+            title: 'Other treatment versions remain ambiguous',
+            reason:
+              'Some prescriptions are missing and usual care was never specified consistently. Resolving available codes does not establish a coherent treatment strategy.',
+            action: 'Define strategies and obtain missing treatment detail',
+          },
+        },
+        measurement: {
+          clearable: {
+            points: 4,
+            title: 'Source records can fix some coding errors',
+            reason:
+              'Several health and survival codes conflict with source charts that are still available. A chart audit can correct those documented errors.',
+            action: 'Audit the available source charts',
+          },
+          persistent: {
+            points: 5,
+            title: 'Much of the measurement cannot be checked',
+            reason:
+              'Other outcomes and baseline health measures lack source documentation or reliable dates. A partial chart audit cannot validate those records.',
+            action: 'Obtain reliable measurement and timing data',
+          },
+        },
+        censoring: {
+          persistent: {
+            points: 9,
+            title: 'Loss to follow-up is extensive',
+            reason:
+              'Many patients vanish from the dataset before one-year survival is known. The study did not record why they left or obtain outcomes elsewhere.',
+            action: 'Recover follow-up and investigate the losses',
+          },
+        },
+        estimation: {
+          persistent: {
+            points: 9,
+            title: 'The model does not match the intended comparison',
+            reason:
+              'The analysis pools incompatible follow-up windows and extrapolates across sparse treatment groups. A precise model output would not repair those design gaps.',
+            action: 'Rebuild the design before reassessing the estimator',
+          },
+        },
+        sensitivity: {
+          clearable: {
+            points: 2,
+            title: 'A limited bias check is available',
+            reason:
+              'The team can examine a few prespecified coding and confounding scenarios. The stipulated results narrow concern within that range only.',
+            action: 'Run the available bias scenarios',
+          },
+          persistent: {
+            points: 7,
+            title: 'Major departures are still unexamined',
+            reason:
+              'The available sensitivity scenarios do not cover the flawed timeline, missing comparisons or extensive loss to follow-up.',
+            action: 'Reassess the unresolved design and bias mechanisms',
+          },
+        },
+        transport: {
+          persistent: {
+            points: 9,
+            title: 'The claim extends far beyond these records',
+            reason:
+              'The study claims an effect for routine-care patients broadly, but its convenience sample comes from a few atypical clinics. The necessary transport argument is absent.',
+            action: 'Name the target population and gather transport evidence',
+          },
+        },
+      },
+    },
+  ];
+  return { ROADMAP_BASE, COMPONENTS, SCENARIOS };
+});
+</script>
+    <script>(function (root, factory) {
+  'use strict';
+  const node = typeof module === 'object' && module.exports;
+  const api = factory(node ? require('./game-content.js') : root.BleileContent);
+  root.BleileGame = api;
+  if (node) module.exports = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (content) {
   'use strict';
   function freeze(value) {
     if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -5625,144 +6167,28 @@ void main() {
     }
     return value;
   }
-  const COMPONENTS = freeze([
-    {
-      id: 'question',
-      label: 'Research question',
-      short: 'Question',
-      definition:
-        'Specify the people, treatment strategies, outcome and time horizon you want to compare.',
-    },
-    {
-      id: 'design',
-      label: 'Study design',
-      short: 'Design',
-      definition:
-        'Align eligibility, treatment assignment and follow-up so the records represent the comparison you intended.',
-    },
-    {
-      id: 'confounding',
-      label: 'Confounding',
-      short: 'Confounding',
-      definition:
-        'Common causes of treatment choice and survival can make the groups differ before treatment. Important causes may be unrecorded.',
-    },
-    {
-      id: 'positivity',
-      label: 'Treatment overlap',
-      short: 'Positivity',
-      definition:
-        'Both treatment options must be possible for the people in the question. Sparse or missing comparisons leave parts of that question unsupported.',
-    },
-    {
-      id: 'consistency',
-      label: 'Treatment definition',
-      short: 'Consistency',
-      definition:
-        'The treatment labels must correspond to the strategies being compared, with relevant versions of treatment specified.',
-    },
-    {
-      id: 'measurement',
-      label: 'Measurement',
-      short: 'Measurement',
-      definition:
-        'Check that health, treatment and outcomes are recorded accurately, at the right times and with usable definitions.',
-    },
-    {
-      id: 'censoring',
-      label: 'Follow-up',
-      short: 'Censoring',
-      definition:
-        'When outcomes become unavailable, explain how the remaining records can represent those lost to follow-up.',
-    },
-    {
-      id: 'estimation',
-      label: 'Estimation',
-      short: 'Estimation',
-      definition:
-        'Choose an estimator for the target quantity and check its fit, stability and uncertainty.',
-    },
-    {
-      id: 'sensitivity',
-      label: 'Sensitivity analysis',
-      short: 'Sensitivity',
-      definition:
-        'Ask how the conclusion changes under plausible departures from the assumptions. A reassuring check covers only the departures examined.',
-    },
-    {
-      id: 'transport',
-      label: 'Applicability elsewhere',
-      short: 'Transport',
-      definition:
-        'Applying a result to different people or settings needs an argument about which differences matter for the effect.',
-    },
-  ]);
-
-  // These profiles and recoveries are stipulated teaching scenarios. A color
-  // describes what the available investigation can address, not a universal
-  // property of a causal assumption or a measured amount of bias.
-  const SCENARIOS = freeze([
-    {
-      id: 'rct',
-      title: 'The trial',
-      subtitle: 'A well-run randomized study',
-      scores: {
-        question: 0,
-        design: 0,
-        confounding: 0,
-        positivity: 0,
-        consistency: 0,
-        measurement: 1,
-        censoring: 1,
-        estimation: 0,
-        sensitivity: 1,
-        transport: 2,
-      },
-      clearable: { measurement: 1, sensitivity: 1 },
-    },
-    {
-      id: 'rwd',
-      title: 'The records',
-      subtitle: 'A carefully designed observational study',
-      scores: {
-        question: 1,
-        design: 1,
-        confounding: 6,
-        positivity: 4,
-        consistency: 1,
-        measurement: 3,
-        censoring: 2,
-        estimation: 2,
-        sensitivity: 2,
-        transport: 2,
-      },
-      clearable: { confounding: 3, measurement: 1, sensitivity: 1 },
-    },
-    {
-      id: 'poor',
-      title: 'The tangle',
-      subtitle: 'A poorly specified and poorly designed study',
-      scores: {
-        question: 10,
-        design: 10,
-        confounding: 10,
-        positivity: 10,
-        consistency: 9,
-        measurement: 9,
-        censoring: 9,
-        estimation: 9,
-        sensitivity: 9,
-        transport: 9,
-      },
-      clearable: {
-        confounding: 6,
-        measurement: 4,
-        consistency: 4,
-        sensitivity: 2,
-      },
-    },
-  ]);
+  const COMPONENTS = freeze(content.COMPONENTS);
   const componentIds = COMPONENTS.map((c) => c.id);
+  // A component's score in a study is the number of bugs its stories carry.
+  const SCENARIOS = freeze(
+    content.SCENARIOS.map((s) => {
+      const count = (id, kind) => s.concerns[id]?.[kind]?.points || 0;
+      return {
+        ...s,
+        scores: Object.fromEntries(
+          componentIds.map((id) => [
+            id,
+            count(id, 'clearable') + count(id, 'persistent'),
+          ]),
+        ),
+        clearable: Object.fromEntries(
+          componentIds
+            .filter((id) => count(id, 'clearable'))
+            .map((id) => [id, count(id, 'clearable')]),
+        ),
+      };
+    }),
+  );
   const config = (id) => {
     const value = SCENARIOS.find((s) => s.id === id);
     if (!value) throw new RangeError('Unknown scenario: ' + id);
@@ -5818,347 +6244,24 @@ void main() {
     for (const b of state.bugs) if (!b.cleared) result[b.component]++;
     return freeze(result);
   }
-  const clearText = freeze({
-    question: ['Clarify the question', 'Specify the intended comparison.'],
-    design: ['Check the study timeline', 'Align eligibility and follow-up.'],
-    confounding: [
-      'Recover pretreatment records',
-      'An important common cause is now recorded.',
-    ],
-    positivity: [
-      'Review the comparison',
-      'A different question needs its own assessment.',
-    ],
-    consistency: [
-      'Resolve treatment coding',
-      'Clarify the recorded treatment versions.',
-    ],
-    measurement: [
-      'Validate the measurements',
-      'Check source records and timing.',
-    ],
-    censoring: ['Recover follow-up', 'Retrieve the available outcome records.'],
-    estimation: ['Check the analysis', 'Examine fit and uncertainty.'],
-    sensitivity: [
-      'Test the bias scenarios',
-      'Only the specified departures are checked.',
-    ],
-    transport: [
-      'Check the new setting',
-      'Reassess who the result can describe.',
-    ],
-  });
-  const persistentText = freeze({
-    question: ['The question is underspecified', 'Needs a clearer target.'],
-    design: [
-      'A gap in the study design',
-      'Needs a different design or argument.',
-    ],
-    confounding: [
-      'Unmeasured common causes',
-      'Needs more evidence or stronger assumptions.',
-    ],
-    positivity: [
-      'Missing treatment comparisons',
-      'Needs comparison data or a new question.',
-    ],
-    consistency: [
-      'Ambiguous treatment versions',
-      'Needs a defensible treatment definition.',
-    ],
-    measurement: [
-      'Unresolved measurement error',
-      'Needs validation beyond these records.',
-    ],
-    censoring: [
-      'Incomplete follow-up',
-      'Needs evidence about the people lost.',
-    ],
-    estimation: ['Uncertain analytic fit', 'Needs further model checks.'],
-    sensitivity: [
-      'Untested departures remain',
-      'Needs a broader sensitivity argument.',
-    ],
-    transport: [
-      'A different population',
-      'Needs a separate transport argument.',
-    ],
-  });
+  const storyOf = (bug, state) =>
+    config(state.scenario).concerns[bug.component]?.[bug.kind];
+  const repairPending = (state, component) =>
+    state.bugs.some(
+      (b) => b.component === component && b.kind === 'clearable' && !b.cleared,
+    );
   function getBugText(bug, state) {
     if (state) assertState(state);
     if (!bug || !componentIds.includes(bug.component))
       throw new RangeError('Unknown bug component.');
-    const [title, subtitle] = (
-      bug.kind === 'clearable' ? clearText : persistentText
-    )[bug.component];
-    if (state?.scenario === 'rwd' && bug.kind === 'persistent') {
-      const captions = {
-        question: [
-          'A few eligibility cases need review',
-          'The population and one-year contrast are specified.',
-        ],
-        design: [
-          'A few decision dates need review',
-          'The study otherwise aligns time zero.',
-        ],
-        consistency: [
-          'A few treatment versions need review',
-          'The treatment strategies are mostly consistent.',
-        ],
-      };
-      if (captions[bug.component])
-        return freeze({
-          title: captions[bug.component][0],
-          subtitle: captions[bug.component][1],
-        });
-    }
+    // A story with its own subtitle replaces the component's caption.
+    const story = state && storyOf(bug, state);
+    if (story?.subtitle)
+      return freeze({ title: story.title, subtitle: story.subtitle });
+    const { title, subtitle } = COMPONENTS.find((c) => c.id === bug.component)
+      .captions[bug.kind === 'clearable' ? 'clearable' : 'persistent'];
     return freeze({ title, subtitle });
   }
-
-  // Hover stories are fictional facts of these three worked examples. Each
-  // color is tied to the current tools, and each size to a component judgment.
-  const BUG_DETAILS = freeze({
-    rct: {
-      measurement: {
-        clearable: {
-          title: 'A survival-code discrepancy',
-          reason:
-            'One-year survival codes do not fully agree with the source records. The source audit can resolve the discrepancy in this trial.',
-          action: 'Audit the survival codes',
-        },
-      },
-      censoring: {
-        persistent: {
-          title: 'A few outcomes are unavailable',
-          reason:
-            'Some randomized patients left follow-up before one year. Their survival outcomes are not in the available records.',
-          action: 'Obtain follow-up or justify the missingness assumption',
-        },
-      },
-      sensitivity: {
-        clearable: {
-          title: 'The missing-outcome check is unfinished',
-          reason:
-            'The trial has not yet checked its specified missing-outcome scenarios. The stipulated check is reassuring within those bounds.',
-          action: 'Check the specified scenarios',
-        },
-      },
-      transport: {
-        persistent: {
-          title: 'The trial enrolled a selected population',
-          reason:
-            'This trial excluded frailer patients treated in routine care. Randomization within the trial does not establish the effect for those patients.',
-          action: 'Build a separate transport argument',
-        },
-      },
-    },
-    rwd: {
-      question: {
-        persistent: {
-          title: 'A few eligibility cases need review',
-          reason:
-            'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',
-          action: 'Adjudicate the remaining eligibility cases',
-        },
-      },
-      design: {
-        persistent: {
-          title: 'A few decision dates need review',
-          reason:
-            'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',
-          action: 'Review the remaining uncertain dates',
-        },
-      },
-      confounding: {
-        clearable: {
-          title: 'Pretreatment function can be recovered',
-          reason:
-            'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',
-          action: 'Recover pretreatment performance status',
-        },
-        persistent: {
-          title: 'Other common causes are unrecorded',
-          reason:
-            'The recovered performance status does not capture every shared cause of treatment choice and survival. Other clinically relevant baseline differences remain unrecorded.',
-          action: 'Seek additional evidence or justify the assumption',
-        },
-      },
-      positivity: {
-        persistent: {
-          title: 'A few subgroups have no comparison',
-          reason:
-            'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',
-          action: 'Seek comparison data or reassess the subgroup question',
-        },
-      },
-      consistency: {
-        persistent: {
-          title: 'A few treatment versions need review',
-          reason:
-            'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',
-          action: 'Review the remaining treatment-version cases',
-        },
-      },
-      measurement: {
-        clearable: {
-          title: 'One validation check remains',
-          reason:
-            'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',
-          action: 'Complete the source-record validation',
-        },
-        persistent: {
-          title: 'A limited validation gap remains',
-          reason:
-            'Most health and survival records have been checked, but a small set lacks source documentation. Auditing the available charts does not validate those missing sources.',
-          action: 'Obtain validation for the remaining records',
-        },
-      },
-      censoring: {
-        persistent: {
-          title: 'Follow-up is nearly complete',
-          reason:
-            'One-year survival is known for most patients. A small group left follow-up, and the remaining records do not establish how their outcomes compare with those retained.',
-          action: 'Recover the missing outcomes or assess their impact',
-        },
-      },
-      estimation: {
-        persistent: {
-          title: 'The main analysis has been checked',
-          reason:
-            'Basic fit and uncertainty checks are complete for the main comparison. Estimates in small subgroups remain sensitive to modeling choices.',
-          action: 'Check stability in the sparse subgroups',
-        },
-      },
-      sensitivity: {
-        clearable: {
-          title: 'Specified bias scenarios are unchecked',
-          reason:
-            'The analysis has not yet examined its prespecified departures from the assumptions. In this example the checked range gives reassuring results.',
-          action: 'Examine the specified bias scenarios',
-        },
-        persistent: {
-          title: 'Other departures remain untested',
-          reason:
-            'The reassuring sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
-          action: 'Broaden the sensitivity argument',
-        },
-      },
-      transport: {
-        persistent: {
-          title: 'Transfer beyond these clinics needs review',
-          reason:
-            'These records come from selected clinics with a defined study population. Applying the one-year comparison in other settings still needs evidence about relevant differences.',
-          action: 'Assess the intended new population',
-        },
-      },
-    },
-    poor: {
-      question: {
-        persistent: {
-          title: 'The study never settled its target',
-          reason:
-            'Eligibility, Treatment X, usual care and the start of the one-year survival window were chosen inconsistently. The reported comparison has no stable target.',
-          action: 'Specify a coherent question and reassess',
-        },
-      },
-      design: {
-        persistent: {
-          title: 'Treatment is assigned after follow-up starts',
-          reason:
-            'Patients are labelled treated if they later receive Treatment X, while follow-up starts at clinic entry. Survival before treatment is therefore built into group assignment.',
-          action: 'Redesign time zero and treatment assignment',
-        },
-      },
-      confounding: {
-        clearable: {
-          title: 'Baseline charts were left unused',
-          reason:
-            'Pretreatment performance status is missing from the analysis even though some charts contain it. Recovering it can reduce this concern without repairing the study timeline.',
-          action: 'Recover the available baseline charts',
-        },
-        persistent: {
-          title: 'Treatment decisions remain poorly explained',
-          reason:
-            'Important reasons for choosing Treatment X were never recorded. Recovering the available charts leaves other common causes of treatment and survival unresolved.',
-          action: 'Obtain new evidence about treatment decisions',
-        },
-      },
-      positivity: {
-        persistent: {
-          title: 'The groups scarcely overlap',
-          reason:
-            'Treatment X is concentrated in patient profiles that have no usual-care counterparts in these records. Better coding cannot supply those missing comparisons.',
-          action: 'Collect comparison data or redefine the question',
-        },
-      },
-      consistency: {
-        clearable: {
-          title: 'Several treatment codes can be untangled',
-          reason:
-            'Some entries combine different Treatment X regimens, but source prescriptions identify their dose and schedule. These available records can resolve part of the ambiguity.',
-          action: 'Recover dose and schedule from prescriptions',
-        },
-        persistent: {
-          title: 'Other treatment versions remain ambiguous',
-          reason:
-            'Some prescriptions are missing and usual care was never specified consistently. Resolving available codes does not establish a coherent treatment strategy.',
-          action: 'Define strategies and obtain missing treatment detail',
-        },
-      },
-      measurement: {
-        clearable: {
-          title: 'Source records can fix some coding errors',
-          reason:
-            'Several health and survival codes conflict with source charts that are still available. A chart audit can correct those documented errors.',
-          action: 'Audit the available source charts',
-        },
-        persistent: {
-          title: 'Much of the measurement cannot be checked',
-          reason:
-            'Other outcomes and baseline health measures lack source documentation or reliable dates. A partial chart audit cannot validate those records.',
-          action: 'Obtain reliable measurement and timing data',
-        },
-      },
-      censoring: {
-        persistent: {
-          title: 'Loss to follow-up is extensive',
-          reason:
-            'Many patients vanish from the dataset before one-year survival is known. The study did not record why they left or obtain outcomes elsewhere.',
-          action: 'Recover follow-up and investigate the losses',
-        },
-      },
-      estimation: {
-        persistent: {
-          title: 'The model does not match the intended comparison',
-          reason:
-            'The analysis pools incompatible follow-up windows and extrapolates across sparse treatment groups. A precise model output would not repair those design gaps.',
-          action: 'Rebuild the design before reassessing the estimator',
-        },
-      },
-      sensitivity: {
-        clearable: {
-          title: 'A limited bias check is available',
-          reason:
-            'The team can examine a few prespecified coding and confounding scenarios. The stipulated results narrow concern within that range only.',
-          action: 'Run the available bias scenarios',
-        },
-        persistent: {
-          title: 'Major departures are still unexamined',
-          reason:
-            'The available sensitivity scenarios do not cover the flawed timeline, missing comparisons or extensive loss to follow-up.',
-          action: 'Reassess the unresolved design and bias mechanisms',
-        },
-      },
-      transport: {
-        persistent: {
-          title: 'The claim extends far beyond these records',
-          reason:
-            'The study claims an effect for routine-care patients broadly, but its convenience sample comes from a few atypical clinics. The necessary transport argument is absent.',
-          action: 'Name the target population and gather transport evidence',
-        },
-      },
-    },
-  });
   function getBugDetails(bug, state) {
     assertState(state);
     if (!bug || typeof bug.id !== 'string')
@@ -6171,28 +6274,12 @@ void main() {
     )
       throw new RangeError('Unknown bug for this study.');
     const c = COMPONENTS.find((c) => c.id === current.component);
-    const detail =
-      BUG_DETAILS[state.scenario]?.[current.component]?.[current.kind];
+    const detail = storyOf(current, state);
     if (!detail)
       throw new RangeError('No story exists for this bug in this study.');
-    const repairComplete = state.bugs
-      .filter(
-        (b) => b.component === current.component && b.kind === 'clearable',
-      )
-      .every((b) => b.cleared);
-    let reason = detail.reason;
-    if (
-      state.scenario === 'rwd' &&
-      current.kind === 'persistent' &&
-      !repairComplete
-    ) {
-      if (current.component === 'confounding')
-        reason =
-          'Recovering performance status would still leave other shared causes of treatment choice and survival unresolved. Other clinically relevant baseline differences remain unrecorded.';
-      if (current.component === 'sensitivity')
-        reason =
-          'The planned sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.';
-    }
+    const reason =
+      (repairPending(state, current.component) && detail.reasonBeforeRepair) ||
+      detail.reason;
     return freeze({
       component: c.id,
       label: c.label,
@@ -6210,27 +6297,15 @@ void main() {
     });
   }
 
-  // Each component points at the roadmap step where its assumption is argued.
-  const ROADMAP_BASE =
-    'https://ishuryak.github.io/causal-roadmap-primer/preview/';
-  const roadmapStep = (number, name, anchor) => ({
-    number,
-    name,
-    anchor,
-    url: ROADMAP_BASE + '#' + anchor,
-  });
-  const ROADMAP_STEPS = freeze({
-    question: roadmapStep(1, 'Question', 'question'),
-    design: roadmapStep(1, 'Target trial', 'trial'),
-    confounding: roadmapStep(2, 'Causal diagram', 'dag'),
-    positivity: roadmapStep(4, 'Identification', 'identify'),
-    consistency: roadmapStep(4, 'Identification', 'identify'),
-    measurement: roadmapStep(3, 'Observed data', 'observed-data'),
-    censoring: roadmapStep(4, 'Identification', 'identify'),
-    estimation: roadmapStep(6, 'Estimators', 'estimators'),
-    sensitivity: roadmapStep(7, 'Checks', 'checks'),
-    transport: roadmapStep(8, 'Causal verdict', 'causal-verdict'),
-  });
+  const ROADMAP_BASE = content.ROADMAP_BASE;
+  const ROADMAP_STEPS = freeze(
+    Object.fromEntries(
+      COMPONENTS.map((c) => [
+        c.id,
+        { ...c.step, url: ROADMAP_BASE + '#' + c.step.anchor },
+      ]),
+    ),
+  );
   const POINTS_NOTE =
     'Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
   const DEBRIEF_STATUSES = freeze([
@@ -6274,7 +6349,7 @@ void main() {
           found: 0,
           title:
             status === 'repaired'
-              ? BUG_DETAILS[state.scenario][bug.component].clearable.action
+              ? source.concerns[bug.component].clearable.action
               : detail.title,
           reason: detail.reason,
           action: detail.action,
@@ -6352,32 +6427,10 @@ void main() {
   const clear = (state, id) => transition(state, id, 'clear');
   function verdict(state) {
     assertState(state);
-    if (state.scenario === 'rct')
-      return freeze({
-        heading: 'Strong starting design',
-        subtitle: 'Follow-up and applicability still matter.',
-      });
-    if (state.scenario === 'poor')
-      return freeze({
-        heading: 'Fundamental gaps remain',
-        subtitle: 'Better records cannot repair this design.',
-      });
-    // Follows the confounding repair itself, not a point total.
-    if (
-      state.bugs.some(
-        (b) =>
-          b.component === 'confounding' && b.kind === 'clearable' && !b.cleared,
-      )
-    )
-      return freeze({
-        heading: 'Confounding obscures the comparison',
-        subtitle: 'Recover information about treatment choice.',
-      });
-    return freeze({
-      heading: 'Missing comparisons remain',
-      subtitle:
-        'Some subgroups still lack support; recovering confounders does not repair positivity.',
-    });
+    const { heading, subtitle } = config(state.scenario).verdicts.find(
+      (v) => !v.untilRepaired || repairPending(state, v.untilRepaired),
+    );
+    return freeze({ heading, subtitle });
   }
   return freeze({
     COMPONENTS,
@@ -7256,13 +7309,7 @@ void main() {
         this.holdSpent = false;
         this.focus = false;
         this.aimedId = null;
-        this.world.background.set(
-          scenario === 'poor'
-            ? '#10111c'
-            : scenario === 'rct'
-              ? '#081923'
-              : '#07121b',
-        );
+        if (state.background) this.world.background.set(state.background);
       }
       const old = new Map(this.nodes.map((n) => [n.id, n])),
         counts = {};
@@ -8083,17 +8130,12 @@ void main() {
     renderQueued = false;
   const icon =
     '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 26 29 9l26 10v32L31 59 9 49Z M9 26l22 10 24-17 M31 36v23 M29 9l2 27 M9 26v23 M18 18l23 9v28 M40 13l-19 18v23 M9 39l22 10 24-16"/><path d="m18 46 10 4v-9l-10-4z" opacity=".3"/></svg>';
-  const cardCopy = {
-    rct: ['Randomized', 'Carefully designed'],
-    rwd: ['Observational', 'Recoverable information'],
-    poor: ['Poorly specified', 'Gaps throughout'],
-  };
   for (const [i, s] of G.SCENARIOS.entries()) {
     const button = document.createElement('button');
     button.className = 'house-card';
     button.dataset.scenario = s.id;
     button.setAttribute('aria-pressed', String(s.id === state.scenario));
-    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${cardCopy[s.id][0]}</h3><p>${cardCopy[s.id][1]}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
+    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.card.heading}</h3><p>${s.card.subtitle}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
     button.addEventListener('click', () => switchScenario(s.id));
     $('houses').append(button);
   }
@@ -8303,7 +8345,10 @@ void main() {
       profile = G.scores(state),
       v = G.verdict(state);
     $('scene-number').textContent =
-      'HOUSE 0' + (G.SCENARIOS.indexOf(config) + 1) + ' / 03';
+      'HOUSE 0' +
+      (G.SCENARIOS.indexOf(config) + 1) +
+      ' / 0' +
+      G.SCENARIOS.length;
     $('scene-title').textContent = config.title;
     $('scene-subtitle').textContent = config.subtitle;
     $('score').textContent = score;
@@ -8325,7 +8370,11 @@ void main() {
       );
       b.querySelector('b').textContent = G.total(states[b.dataset.scenario]);
     }
-    scene.setState({ ...state, scores: profile });
+    scene.setState({
+      ...state,
+      scores: profile,
+      background: config.background,
+    });
     syncTabStop();
     syncAvailability();
   }

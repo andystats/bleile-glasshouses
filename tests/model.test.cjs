@@ -39,6 +39,39 @@ test('three stipulated scenarios span 5, 24 and 94, with 0–10 per component', 
   assert(G.total(middle) < G.total(G.initialState('poor')) / 3);
 });
 
+test('every study’s content is complete: each story carries points and text, and the last verdict always applies', () => {
+  const kinds = ['clearable', 'persistent'],
+    ids = G.COMPONENTS.map((c) => c.id);
+  for (const c of G.COMPONENTS) {
+    assert(c.label && c.short && c.definition, c.id);
+    for (const kind of kinds)
+      assert(c.captions[kind].title && c.captions[kind].subtitle, c.id);
+  }
+  assert.equal(new Set(G.SCENARIOS.map((s) => s.id)).size, G.SCENARIOS.length);
+  for (const s of G.SCENARIOS) {
+    assert(s.title && s.subtitle && s.card.heading && s.card.subtitle, s.id);
+    assert.match(s.background, /^#[0-9a-f]{6}$/, s.id);
+    for (const [component, stories] of Object.entries(s.concerns)) {
+      const where = s.id + ' ' + component;
+      assert(ids.includes(component), where);
+      assert(Object.keys(stories).length > 0, where);
+      for (const [kind, story] of Object.entries(stories)) {
+        assert(kinds.includes(kind), where);
+        assert(Number.isInteger(story.points) && story.points > 0, where);
+        assert(story.title && story.reason && story.action, where);
+        if (story.reasonBeforeRepair)
+          assert(kind === 'persistent' && stories.clearable, where);
+      }
+    }
+    const last = s.verdicts.at(-1);
+    assert.equal(last.untilRepaired, undefined, s.id);
+    for (const v of s.verdicts) {
+      assert(v.heading && v.subtitle, s.id);
+      if (v !== last) assert(s.concerns[v.untilRepaired]?.clearable, s.id);
+    }
+  }
+});
+
 test('all bugs exist initially but are unseen, and scenario state is independent', () => {
   const a = G.initialState(),
     b = G.initialState('rct'),
@@ -183,6 +216,24 @@ test('verdicts retain residual concerns and do not certify a treatment effect', 
       (b) => b.component === 'sensitivity' && b.kind === 'clearable',
     );
   assert.match(G.getBugText(b, s).subtitle, /Only the specified departures/);
+});
+
+test('a story with its own subtitle replaces the component’s caption, in that study only', () => {
+  const records = G.initialState(),
+    poor = G.initialState('poor');
+  const question = (s) => s.bugs.find((b) => b.component === 'question');
+  assert.deepEqual(G.getBugText(question(records), records), {
+    title: 'A few eligibility cases need review',
+    subtitle: 'The population and one-year contrast are specified.',
+  });
+  assert.deepEqual(G.getBugText(question(poor), poor), {
+    title: 'The question is underspecified',
+    subtitle: 'Needs a clearer target.',
+  });
+  assert.deepEqual(
+    G.getBugText(question(records)),
+    G.getBugText(question(poor), poor),
+  );
 });
 
 test('unknown scenarios, unknown bugs and malformed state are rejected', () => {
@@ -648,7 +699,12 @@ test('debrief is immutable and says plainly what Bleile points are; no visible d
     path = require('node:path'),
     read = (file) =>
       fs.readFileSync(path.join(__dirname, '../src', file), 'utf8');
-  for (const file of ['index.html', 'app.js', 'game-model.js']) {
+  for (const file of [
+    'index.html',
+    'app.js',
+    'game-content.js',
+    'game-model.js',
+  ]) {
     assert.doesNotMatch(read(file), /\bdings?\b/i, file);
     assert.doesNotMatch(read(file), /Bleiles/, file);
   }

@@ -858,13 +858,7 @@
         this.holdSpent = false;
         this.focus = false;
         this.aimedId = null;
-        this.world.background.set(
-          scenario === 'poor'
-            ? '#10111c'
-            : scenario === 'rct'
-              ? '#081923'
-              : '#07121b',
-        );
+        if (state.background) this.world.background.set(state.background);
       }
       const old = new Map(this.nodes.map((n) => [n.id, n])),
         counts = {};

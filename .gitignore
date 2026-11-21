@@ -18,6 +18,7 @@
 /src/*
 !/src/index.html
 !/src/style.css
+!/src/game-content.js
 !/src/game-model.js
 !/src/scene.js
 !/src/app.js

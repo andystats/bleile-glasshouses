@@ -37,6 +37,7 @@ html = html.replace(
 );
 for (const [marker, file] of [
   ['/* APP_CSS */', 'style.css'],
+  ['/* GAME_CONTENT */', 'game-content.js'],
   ['/* GAME_MODEL */', 'game-model.js'],
   ['/* SCENE_JS */', 'scene.js'],
   ['/* APP_JS */', 'app.js'],

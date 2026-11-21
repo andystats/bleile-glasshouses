@@ -27,6 +27,8 @@ npm run build
 
 `npm run format` applies Prettier to the scripts, styles and tests. `src/index.html` is formatted by hand, because whitespace between inline elements is visible on the page. GitHub Actions runs the format check, the tests and the build on every pull request and on `main`, and fails when the committed `index.html` does not match `src/`.
 
+The wording and the numbers of the game are in `src/game-content.js`: the ten components and, for each study, its card, verdicts and concerns. A concern's `points` is the number of bugs it puts in the house. `src/game-model.js` holds the rules and reads every study from that file. The tests pin the current totals (5, 24 and 94) and the notes dialog in `src/index.html` quotes the observational example's numbers, so update both when the points change.
+
 The build preserves the source and writes identical `index.html` and `Bleile-in-the-Light.html` files. Three.js 0.187.0 is bundled locally; its license is embedded in the HTML and included in `THIRD_PARTY_LICENSES.txt`.
 
 GitHub Pages serves `index.html` from the root of `main`. Commit the rebuilt HTML with source changes. Local review artifacts and earlier prototypes are excluded from publication.
