@@ -101,6 +101,15 @@ test('a coral body hit never clears a neighboring blue body in the spotlight', (
   assert.equal(scene.lockedId, 'red');
   assert.deepEqual(events.clear, []);
 });
+test('a body whose kind is withheld never charges, however long it is held', () => {
+  const { scene, events } = fixture([bug('pale', 0, 'unpredicted')]);
+  point(scene, 0);
+  scene.setFocusing(true);
+  advance(scene, 2);
+  assert.equal(scene.lockedId, 'pale');
+  assert.equal(scene.nodes[0].charge, 0);
+  assert.deepEqual(events.clear, []);
+});
 test('a single press clears exactly one body and cannot chain to a second', () => {
   const { scene, events } = fixture([bug('one', 0), bug('two', 30)]);
   point(scene, 0);

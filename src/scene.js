@@ -30,12 +30,12 @@
       reticle: '#ffc0ac',
       label: 'coral, reveal only',
     },
-    unknown: {
+    unpredicted: {
       body: 'pale',
       eye: 'paleEye',
       legs: '#cfc8b0',
       reticle: '#f3ecd4',
-      label: 'not yet judged',
+      label: 'not yet predicted',
     },
   };
   const lookOf = (kind) => LOOKS[kind] || LOOKS.persistent;
@@ -301,12 +301,7 @@
       };
       this.initLightMask();
       for (const name of [
-        'cyan',
-        'coral',
-        'pale',
-        'cyanEye',
-        'coralEye',
-        'paleEye',
+        ...Object.values(LOOKS).flatMap((look) => [look.body, look.eye]),
         'pupil',
       ])
         this.maskBugMaterial(this.materials[name]);

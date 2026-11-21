@@ -306,7 +306,7 @@ i.pale {
   background: var(--coral);
   box-shadow: 0 0 15px #f3978c44;
 }
-.bug-mark[data-kind='unknown'] {
+.bug-mark[data-kind='unpredicted'] {
   border: 0;
   background: var(--pale);
   box-shadow: 0 0 15px #e3dcc444;
@@ -396,7 +396,7 @@ i.pale {
 .inspect-card[data-kind='clearable'] .inspect-response > span {
   color: var(--cyan);
 }
-.inspect-card[data-kind='unknown'] .inspect-response > span {
+.inspect-card[data-kind='unpredicted'] .inspect-response > span {
   color: var(--pale);
 }
 .inspect-response strong {
@@ -612,11 +612,6 @@ kbd {
   font-weight: 500;
   line-height: 1.5;
 }
-.house-card p {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 4px;
-}
 .house-card .card-score {
   font-size: 10px;
   color: var(--gold);
@@ -632,9 +627,6 @@ kbd {
   align-items: center;
   justify-content: space-between;
   padding: 9px 0 24px;
-}
-.verdict .eyebrow {
-  font-size: 8px;
 }
 .verdict h2 {
   font:
@@ -694,7 +686,7 @@ dialog::backdrop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 .dialog-head button {
   font-size: 11px;
@@ -770,20 +762,20 @@ dd {
   line-height: 1.8;
 }
 
-/* The player calls a bug's color here before it is shown. */
+/* The player predicts a bug's color here before it is shown. */
 #predict {
   max-width: 520px;
 }
 #predict-title {
   outline: none;
 }
-.predict-choices {
+.dialog-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 22px;
 }
-.predict-choices button {
+.dialog-actions button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -795,15 +787,15 @@ dd {
   background: #e8c68d0c;
   min-height: 44px;
 }
-.predict-choices button:hover {
+.dialog-actions button:hover {
   border-color: var(--gold);
 }
-.predict-choices i {
+.dialog-actions i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
-.predict-choices i.coral {
+.dialog-actions i.coral {
   border-radius: 0;
   transform: rotate(45deg);
 }
@@ -823,12 +815,9 @@ dd {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-#profile .dialog-head {
-  margin-bottom: 12px;
-}
 #profile .lead,
 #debrief-summary,
-#debrief-calls,
+#debrief-predictions,
 #debrief-note {
   margin-block: 6px;
 }
@@ -849,7 +838,7 @@ dd {
   margin: 0 0 4px;
   font-size: 14px;
 }
-.debrief-group[data-status='unjudged'] h3 {
+.debrief-group[data-status='unpredicted'] h3 {
   color: var(--pale);
 }
 .debrief-group[data-status='repairable'] h3 {
@@ -950,6 +939,9 @@ dd {
 }
 .profile-row[data-component='positivity'] .profile-fill {
   background: var(--coral);
+}
+#profile-bars.withheld .profile-fill {
+  background: #c6b69a;
 }
 
 /* Breakpoints, widest first. Each selector appears once per breakpoint. */
@@ -1187,11 +1179,6 @@ dd {
   }
   .house-card h3 {
     font-size: 11px;
-  }
-  .house-card p {
-    font-size: 9px;
-    line-height: 1.5;
-    min-height: 28px;
   }
   .house-card .number {
     font-size: 8px;

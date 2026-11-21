@@ -2,8 +2,8 @@
   'use strict';
   const $ = (id) => document.getElementById(id),
     G = window.BleileGame;
-  // Opened with ?predict, a study that has findings asks for a call on each
-  // concern before its color is shown.
+  // Opened with ?predict, a study that has findings asks for a prediction on
+  // each concern before its color is shown.
   const predict = new URLSearchParams(location.search).has('predict');
   const states = Object.fromEntries(
     G.SCENARIOS.map((s) => [s.id, G.initialState(s.id, { predict })]),
@@ -11,6 +11,7 @@
   let state = states.rwd,
     selected = null,
     asked = null,
+    opener = null,
     sound = false,
     audio = null,
     light = true,
@@ -21,9 +22,28 @@
     hintTimer,
     cycle = 0,
     renderQueued = false;
-  // A bug that still awaits the player's call shows no color.
+  // A bug whose story is not yet predicted shows no color.
   const kindOf = (bug) =>
-    predict && G.awaitsPrediction(bug, state) ? 'unknown' : bug.kind;
+    G.unpredicted(bug, state) ? 'unpredicted' : bug.kind;
+  const CLOSING =
+    'Every available repair is done. Open Review this round for your closing debrief.';
+  // What the player reads for each kind of bug.
+  const KIND_COPY = {
+    clearable: {
+      color: 'blue',
+      card: 'Blue · available repair',
+      found: 'Blue. Hold Space to clear.',
+    },
+    persistent: {
+      color: 'coral',
+      card: 'Coral · reveal only',
+      found: 'Coral. Reveal only.',
+    },
+    unpredicted: {
+      card: 'Pale · not yet predicted',
+      found: 'Not yet predicted. Press Space to predict its color.',
+    },
+  };
   const icon =
     '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 26 29 9l26 10v32L31 59 9 49Z M9 26l22 10 24-17 M31 36v23 M29 9l2 27 M9 26v23 M18 18l23 9v28 M40 13l-19 18v23 M9 39l22 10 24-16"/><path d="m18 46 10 4v-9l-10-4z" opacity=".3"/></svg>';
   for (const [i, s] of G.SCENARIOS.entries()) {
@@ -31,7 +51,7 @@
     button.className = 'house-card';
     button.dataset.scenario = s.id;
     button.setAttribute('aria-pressed', String(s.id === state.scenario));
-    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.card.heading}</h3><p>${s.card.subtitle}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
+    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.title}</h3><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
     button.addEventListener('click', () => switchScenario(s.id));
     $('houses').append(button);
   }
@@ -96,26 +116,26 @@
   }
   function updateFocusButton(bug) {
     const kind = bug && kindOf(bug),
-      waiting = kind === 'unknown',
+      unpredicted = kind === 'unpredicted',
       blue = kind === 'clearable' && !bug.cleared,
       canClear = blue && light;
-    $('focus').disabled = !(canClear || (waiting && light));
+    $('focus').disabled = !(canClear || (unpredicted && light));
     $('focus-label').textContent = canClear
       ? 'Hold to neutralize'
-      : blue || waiting
-        ? light
-          ? 'Predict its color'
-          : 'Turn spotlight on'
-        : bug
-          ? 'Reveal only'
-          : 'Aim at a bug';
+      : unpredicted && light
+        ? 'Predict its color'
+        : blue || unpredicted
+          ? 'Turn spotlight on'
+          : bug
+            ? 'Reveal only'
+            : 'Aim at a bug';
     $('focus').setAttribute(
       'aria-label',
       canClear
         ? 'Hold to neutralize this blue bug'
         : blue
           ? 'Turn the spotlight on to neutralize this blue bug'
-          : waiting
+          : unpredicted
             ? light
               ? 'Predict whether this bug is blue or coral'
               : 'Turn the spotlight on to predict this bug'
@@ -155,12 +175,7 @@
     $('inspect-name').textContent = detail.label;
     $('inspect-score').textContent = detail.score + ' / 10';
     $('inspect-reason').textContent = detail.reason;
-    $('inspect-kind').textContent =
-      kind === 'clearable'
-        ? 'Blue · available repair'
-        : kind === 'unknown'
-          ? 'Pale · not yet judged'
-          : 'Coral · reveal only';
+    $('inspect-kind').textContent = KIND_COPY[kind].card;
     $('inspect-action').textContent = detail.action;
     $('inspect-size').textContent = detail.sizeNote;
     $('inspection').hidden = false;
@@ -194,24 +209,21 @@
           : kind === 'clearable'
             ? 'hold to neutralize'
             : 'predict its color');
-    $('focus-subtitle').textContent =
-      kind === 'clearable' ? copy.title : copy.subtitle;
+    $('focus-subtitle').textContent = copy;
     updateFocusButton(bug);
     showInspection(bug);
   }
-  function transition(kind, id) {
+  function transition(kind, id, guess) {
     const bug = state.bugs.find((b) => b.id === id);
-    if (!bug) return;
-    const result = G[kind](state, id);
-    if (!result.event) return;
+    if (!bug) return null;
+    const result = G[kind](state, id, guess);
+    if (!result.event) return null;
     state = result.state;
     states[state.scenario] = state;
     if (kind === 'reveal') scheduleRender();
     else render();
     if (kind === 'clear') {
-      const done = !state.bugs.some(
-        (b) => kindOf(b) !== 'persistent' && !b.cleared,
-      );
+      const done = G.debrief(state).complete;
       tone('clear');
       toast(
         '−1 ' +
@@ -219,30 +231,34 @@
           (done ? ' · closing debrief ready' : ''),
       );
       $('announcement').textContent =
-        result.event.title +
+        result.event.caption +
         '. ' +
         points(G.total(state)) +
         ' remain' +
         (G.total(state) === 1 ? 's' : '') +
         '.' +
-        (done
-          ? ' Every available repair is done. Open Review this round for your closing debrief.'
-          : '');
+        (done ? ' ' + CLOSING : '');
       if (selected === id) {
         $('focus-title').textContent = 'One concern cleared.';
-        $('focus-subtitle').textContent = G.getBugText(bug, state).title;
+        $('focus-subtitle').textContent = G.getBugText(bug, state);
         selected = null;
         $('inspection').hidden = true;
         updateFocusButton(null);
       }
     }
     dismissHint();
+    return result.event;
   }
-  // The call is made in a dialog, so the pointer is free to choose.
-  function askPrediction(bug) {
-    const detail = G.getBugDetails(bug, state);
+  // The spotlight follows the pointer, so the choice is offered in a dialog.
+  function askPrediction() {
+    const bug = state.bugs.find((b) => b.id === selected);
+    if (!light || !bug || kindOf(bug) !== 'unpredicted') return;
     setFocusing(false);
+    if ($('predict').open || $('world').classList.contains('graphics-paused'))
+      return;
+    const detail = G.getBugDetails(bug, state);
     asked = bug.id;
+    opener = document.activeElement;
     $('predict-title').textContent = detail.label;
     $('predict-finding').textContent = detail.reason;
     $('predict-ask').hidden = false;
@@ -251,31 +267,32 @@
     $('predict-title').focus();
   }
   function answerPrediction(guess) {
+    // A prediction needs a seen bug.
     transition('reveal', asked);
-    const result = G.predict(state, asked, guess);
-    if (!result.event) {
+    const event = transition('predict', asked, guess);
+    // A second activation finds the story already predicted.
+    if (!event) {
       $('predict').close();
       return;
     }
-    state = result.state;
-    states[state.scenario] = state;
-    render();
-    if (selected === asked) select(asked);
+    if (selected) select(selected);
+    syncAvailability();
     const bug = state.bugs.find((b) => b.id === asked),
       detail = G.getBugDetails(bug, state);
     $('predict-result').dataset.kind = bug.kind;
     $('predict-outcome').textContent =
-      (result.event.correct ? 'Correct. ' : 'Not this time. ') +
-      (bug.kind === 'clearable'
-        ? 'It is blue: this study can clear it.'
-        : 'It is coral: it stays.');
+      (event.correct ? 'Correct. ' : 'Not this time. ') +
+      'It is ' +
+      KIND_COPY[bug.kind].color +
+      ': this study ' +
+      (bug.kind === 'clearable' ? 'can' : 'cannot') +
+      ' clear it.';
     $('predict-reason').textContent = detail.reason;
     $('predict-action').textContent =
       detail.status + ': ' + detail.action + '.';
     $('predict-ask').hidden = true;
     $('predict-result').hidden = false;
     $('predict-continue').focus();
-    dismissHint();
   }
   function scheduleRender() {
     if (renderQueued) return;
@@ -305,6 +322,9 @@
     $('cleared').textContent = state.bugs.filter((b) => b.cleared).length;
     $('verdict-title').textContent = v.heading;
     $('verdict-subtitle').textContent = v.subtitle;
+    const withheld = G.withheld(state);
+    $('legend-pale').hidden = !withheld;
+    $('profile-bars').classList.toggle('withheld', withheld);
     if ($('profile').open) renderDebrief();
     for (const row of $('profile-bars').children) {
       row.querySelector('b').textContent =
@@ -321,7 +341,7 @@
     }
     scene.setState({
       ...state,
-      bugs: predict
+      bugs: state.predictions
         ? state.bugs.map((b) => ({ ...b, kind: kindOf(b) }))
         : state.bugs,
       scores: profile,
@@ -348,21 +368,23 @@
     count.setAttribute('aria-label', points(row.points));
     summary.append(document.createTextNode(row.title + ' '), count);
     details.append(summary);
-    if (row.status !== 'unjudged') details.append(el('p', '', row.reason));
+    if (row.status !== 'unpredicted') details.append(el('p', '', row.reason));
     details.append(el('p', '', row.matters));
     if (row.guess)
       details.append(
         el(
           'p',
           '',
-          'You called it ' +
-            (row.guess === 'clearable' ? 'blue' : 'coral') +
+          'You predicted ' +
+            KIND_COPY[row.guess].color +
             (row.correct ? ': correct.' : ': not this time.'),
         ),
       );
     if (row.status === 'repaired') {
       const remaining =
-        row.sameComponent.repairable + row.sameComponent.persistent;
+        row.sameComponent.repairable +
+        row.sameComponent.persistent +
+        (row.sameComponent.unpredicted || 0);
       if (remaining)
         details.append(
           el(
@@ -409,49 +431,50 @@
       ? 'Closing debrief'
       : 'Round review';
     $('profile-subtitle').textContent =
-      d.study.title +
-      ' · ' +
-      d.study.subtitle +
-      ' · ' +
-      points(d.remaining) +
-      ' remaining';
+      d.study.title + ' · ' + points(d.remaining) + ' remaining';
     $('debrief-verdict').textContent =
       d.verdict.heading + '. ' + d.verdict.subtitle;
     $('debrief-summary').textContent = d.summary;
-    const calls = d.predictions,
-      left = calls ? calls.total - calls.made : 0;
-    $('debrief-calls').hidden = !calls?.total;
-    if (calls?.total)
-      $('debrief-calls').textContent = [
-        calls.made &&
-          'Your calls: ' + calls.correct + ' of ' + calls.made + ' correct.',
-        left && left + (left === 1 ? ' call' : ' calls') + ' still to make.',
+    const tally = d.predictions;
+    $('debrief-predictions').hidden = !tally?.total;
+    if (tally?.total) {
+      const left = tally.total - tally.made;
+      $('debrief-predictions').textContent = [
+        tally.made &&
+          'Your predictions: ' +
+            tally.correct +
+            ' of ' +
+            tally.made +
+            ' correct.',
+        left &&
+          left +
+            (left === 1 ? ' prediction' : ' predictions') +
+            ' still to make.',
       ]
         .filter(Boolean)
         .join(' ');
+    }
     $('debrief-note').textContent = d.pointsNote;
     box.replaceChildren(
-      ...d.groups
-        .filter((group) => group.id !== 'unjudged' || group.points)
-        .map((group) => {
-          const section = el('section', 'debrief-group'),
-            heading = el('h3'),
-            id = 'debrief-' + group.id;
-          section.dataset.status = group.id;
-          heading.id = id;
-          section.setAttribute('aria-labelledby', id);
-          heading.append(
-            el('span', '', group.heading),
-            el('span', 'debrief-count', points(group.points)),
-          );
-          section.append(heading);
-          if (group.rows.length) {
-            const list = el('ul', 'debrief-rows');
-            list.append(...group.rows.map(debriefRow));
-            section.append(list);
-          }
-          return section;
-        }),
+      ...d.groups.map((group) => {
+        const section = el('section', 'debrief-group'),
+          heading = el('h3'),
+          id = 'debrief-' + group.id;
+        section.dataset.status = group.id;
+        heading.id = id;
+        section.setAttribute('aria-labelledby', id);
+        heading.append(
+          el('span', '', group.heading),
+          el('span', 'debrief-count', points(group.points)),
+        );
+        section.append(heading);
+        if (group.rows.length) {
+          const list = el('ul', 'debrief-rows');
+          list.append(...group.rows.map(debriefRow));
+          section.append(list);
+        }
+        return section;
+      }),
     );
   }
   function syncAvailability() {
@@ -520,24 +543,19 @@
     focusing = value;
     scene.setFocusing(value);
     $('focus').classList.toggle('active', value);
-    // A press on an unjudged bug asks for the call instead of starting a repair.
-    const bug = value && state.bugs.find((b) => b.id === selected);
-    if (bug && kindOf(bug) === 'unknown') askPrediction(bug);
+    // The scene has now aimed this press at a bug. On an unpredicted bug the
+    // press asks for the prediction instead of starting a repair.
+    if (value) askPrediction();
   }
   function findNext() {
     if (!scene.getDebug().available || $('scene').hidden) return;
     const remaining = state.bugs.filter((b) => !b.cleared);
     if (!remaining.length) return;
     const unseen = remaining.filter((b) => !b.seen);
-    const waiting = remaining.filter((b) => kindOf(b) === 'unknown');
+    const unpredicted = remaining.filter((b) => kindOf(b) === 'unpredicted');
     const blue = remaining.filter((b) => kindOf(b) === 'clearable');
-    const pool = unseen.length
-      ? unseen
-      : waiting.length
-        ? waiting
-        : blue.length
-          ? blue
-          : remaining;
+    const pool =
+      [unseen, unpredicted, blue].find((bugs) => bugs.length) || remaining;
     const b = pool[cycle % pool.length];
     cycle++;
     setLight(true);
@@ -547,11 +565,7 @@
     $('announcement').textContent =
       G.COMPONENTS.find((c) => c.id === b.component).short +
       '. ' +
-      (kindOf(b) === 'clearable'
-        ? 'Blue. Hold Space to clear.'
-        : kindOf(b) === 'unknown'
-          ? 'Not yet judged. Press Space to predict its color.'
-          : 'Coral. Reveal only.');
+      KIND_COPY[kindOf(b)].found;
   }
   for (const b of document.querySelectorAll('[data-predict]'))
     b.addEventListener('click', () => answerPrediction(b.dataset.predict));
@@ -578,6 +592,26 @@
   });
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
     $('focus').addEventListener(type, () => setFocusing(false));
+  // Enter and assistive technology send a click with no pointer press, on the
+  // main button or a bug. A repair needs a hold, but a prediction does not.
+  $('focus').addEventListener('click', (e) => {
+    if (e.detail === 0) askPrediction();
+  });
+  // The pointer may have moved the spotlight since this bug took focus.
+  $('hotspots').addEventListener('click', (e) => {
+    if (e.detail !== 0) return;
+    scene.aimAt(e.target.dataset.bug);
+    askPrediction();
+  });
+  $('predict').addEventListener('close', () => {
+    // A coral prediction disables the main button, which then cannot take
+    // focus back.
+    if (opener?.disabled) $('find-next').focus();
+    // A prediction can be the action that completes the round.
+    if (!G.debrief(state).complete) return;
+    toast('Closing debrief ready');
+    $('announcement').textContent = CLOSING;
+  });
   document.addEventListener('keydown', (e) => {
     if (
       e.code !== 'Space' ||
@@ -629,6 +663,8 @@
     $(button).addEventListener('click', () => {
       setFocusing(false);
       if (dialog === 'profile') renderDebrief();
+      if (dialog === 'notes')
+        $('notes-example').hidden = Object.values(states).some(G.withheld);
       $(dialog).showModal();
       $(dialog).scrollTop = 0;
     });
@@ -647,11 +683,9 @@
       )
         dialog.close();
     });
-  if (predict) {
-    $('legend-pale').hidden = false;
+  if (predict)
     $('beam-instruction').textContent =
       'Inspect a bug and predict its color. Then hold on blue to clear.';
-  }
   render();
   hintTimer = setTimeout(dismissHint, 6000);
   window.BleileApp = {

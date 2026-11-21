@@ -314,7 +314,7 @@ i.pale {
   background: var(--coral);
   box-shadow: 0 0 15px #f3978c44;
 }
-.bug-mark[data-kind='unknown'] {
+.bug-mark[data-kind='unpredicted'] {
   border: 0;
   background: var(--pale);
   box-shadow: 0 0 15px #e3dcc444;
@@ -404,7 +404,7 @@ i.pale {
 .inspect-card[data-kind='clearable'] .inspect-response > span {
   color: var(--cyan);
 }
-.inspect-card[data-kind='unknown'] .inspect-response > span {
+.inspect-card[data-kind='unpredicted'] .inspect-response > span {
   color: var(--pale);
 }
 .inspect-response strong {
@@ -620,11 +620,6 @@ kbd {
   font-weight: 500;
   line-height: 1.5;
 }
-.house-card p {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 4px;
-}
 .house-card .card-score {
   font-size: 10px;
   color: var(--gold);
@@ -640,9 +635,6 @@ kbd {
   align-items: center;
   justify-content: space-between;
   padding: 9px 0 24px;
-}
-.verdict .eyebrow {
-  font-size: 8px;
 }
 .verdict h2 {
   font:
@@ -702,7 +694,7 @@ dialog::backdrop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 .dialog-head button {
   font-size: 11px;
@@ -778,20 +770,20 @@ dd {
   line-height: 1.8;
 }
 
-/* The player calls a bug's color here before it is shown. */
+/* The player predicts a bug's color here before it is shown. */
 #predict {
   max-width: 520px;
 }
 #predict-title {
   outline: none;
 }
-.predict-choices {
+.dialog-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 22px;
 }
-.predict-choices button {
+.dialog-actions button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -803,15 +795,15 @@ dd {
   background: #e8c68d0c;
   min-height: 44px;
 }
-.predict-choices button:hover {
+.dialog-actions button:hover {
   border-color: var(--gold);
 }
-.predict-choices i {
+.dialog-actions i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
-.predict-choices i.coral {
+.dialog-actions i.coral {
   border-radius: 0;
   transform: rotate(45deg);
 }
@@ -831,12 +823,9 @@ dd {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-#profile .dialog-head {
-  margin-bottom: 12px;
-}
 #profile .lead,
 #debrief-summary,
-#debrief-calls,
+#debrief-predictions,
 #debrief-note {
   margin-block: 6px;
 }
@@ -857,7 +846,7 @@ dd {
   margin: 0 0 4px;
   font-size: 14px;
 }
-.debrief-group[data-status='unjudged'] h3 {
+.debrief-group[data-status='unpredicted'] h3 {
   color: var(--pale);
 }
 .debrief-group[data-status='repairable'] h3 {
@@ -958,6 +947,9 @@ dd {
 }
 .profile-row[data-component='positivity'] .profile-fill {
   background: var(--coral);
+}
+#profile-bars.withheld .profile-fill {
+  background: #c6b69a;
 }
 
 /* Breakpoints, widest first. Each selector appears once per breakpoint. */
@@ -1196,11 +1188,6 @@ dd {
   .house-card h3 {
     font-size: 11px;
   }
-  .house-card p {
-    font-size: 9px;
-    line-height: 1.5;
-    min-height: 28px;
-  }
   .house-card .number {
     font-size: 8px;
     right: 7px;
@@ -1297,9 +1284,9 @@ dd {
             <div id="hotspots" aria-label="Study regions"></div>
             <div class="hud upper">
               <div id="world-heading">
-                <p class="eyebrow" id="scene-number">HOUSE 02 / 03</p>
-                <h1 id="scene-title">The records</h1>
-                <p class="subtitle" id="scene-subtitle">A promising comparison. Important gaps.</p>
+                <p class="eyebrow" id="scene-number"></p>
+                <h1 id="scene-title"></h1>
+                <p class="subtitle" id="scene-subtitle"></p>
               </div>
               <div class="scoreboard">
                 <div><strong id="score">24</strong><span>Bleile points<br>remaining</span></div>
@@ -1350,9 +1337,8 @@ dd {
         <section class="houses" aria-label="Choose a study scenario" id="houses"></section>
         <div class="verdict">
           <div>
-            <span class="eyebrow">THE STUDY</span>
-            <h2 id="verdict-title">Confounding obscures the comparison.</h2>
-            <p id="verdict-subtitle">Recovering information cannot create missing comparisons.</p>
+            <h2 id="verdict-title"></h2>
+            <p id="verdict-subtitle"></p>
           </div>
           <button id="profile-open" class="profile-button" aria-haspopup="dialog">Review this round <span aria-hidden="true">↗</span></button>
         </div>
@@ -1364,11 +1350,9 @@ dd {
     </div>
     <dialog id="guide" aria-labelledby="guide-title">
       <div class="dialog-head">
-        <span class="eyebrow">FIELD GUIDE</span>
+        <h2 id="guide-title">Field guide</h2>
         <button data-close="guide" aria-label="Close field guide">Close ×</button>
       </div>
-      <h2 id="guide-title">Bring it to light.</h2>
-      <p class="lead">Three studies. What can the light reveal?</p>
       <p>Move the spotlight to investigate. The corner lamp represents existing knowledge: it lights a small patch inside the study, leaving other concerns hidden. It removes no Bleile points. A targeted spotlight and a specified repair are needed to clear blue.</p>
       <div class="type-guide">
         <div>
@@ -1398,7 +1382,7 @@ dd {
       <p class="lead" id="profile-subtitle"></p>
       <p id="debrief-verdict"></p>
       <p id="debrief-summary"></p>
-      <p id="debrief-calls" hidden></p>
+      <p id="debrief-predictions" hidden></p>
       <p id="debrief-note" class="debrief-note"></p>
       <div id="debrief-groups"></div>
       <details class="debrief-profile">
@@ -1406,37 +1390,35 @@ dd {
         <div id="profile-bars"></div>
       </details>
     </dialog>
-    <dialog id="predict" aria-labelledby="predict-title">
+    <dialog id="predict" aria-labelledby="predict-title" aria-describedby="predict-finding">
       <div class="dialog-head">
-        <span class="eyebrow">YOUR CALL</span>
+        <h2 id="predict-title" tabindex="-1"></h2>
         <button data-close="predict" aria-label="Close this prediction">Close ×</button>
       </div>
-      <h2 id="predict-title" tabindex="-1"></h2>
       <p class="lead" id="predict-finding"></p>
       <div id="predict-ask">
-        <p>Will this one clear, or will it stay? Blue means the information or checks available in this study can address it. Coral means they cannot.</p>
-        <div class="predict-choices">
+        <p>Can the information or checks available in this study address it?</p>
+        <div class="dialog-actions">
           <button data-predict="clearable"><i class="cyan"></i>Blue · it clears</button>
           <button data-predict="persistent"><i class="coral"></i>Coral · it stays</button>
         </div>
       </div>
-      <div id="predict-result" aria-live="polite" hidden>
+      <div id="predict-result" hidden>
         <p id="predict-outcome"></p>
         <p id="predict-reason"></p>
         <p id="predict-action"></p>
-        <div class="predict-choices">
-          <button id="predict-continue" data-close="predict">Continue</button>
+        <div class="dialog-actions">
+          <button id="predict-continue" data-close="predict" aria-describedby="predict-outcome predict-reason predict-action">Continue</button>
         </div>
       </div>
     </dialog>
     <dialog id="notes" aria-labelledby="notes-title">
       <div class="dialog-head">
-        <span class="eyebrow">ABOUT THE SCORE</span>
+        <h2 id="notes-title">About the score</h2>
         <button data-close="notes" aria-label="Close score explanation">Close ×</button>
       </div>
-      <h2 id="notes-title">An illustrative tally.</h2>
       <p>Each bug is one stipulated concern. Its size follows the remaining 0–10 concern score for its component. Hover to see the study-specific reason. The total includes bugs still hidden in the dark. Revealing one changes what you have found, not the study’s condition.</p>
-      <p>The observational example starts at 24. Recovering pretreatment information clears three confounding Bleile points, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p>
+      <p id="notes-example">The observational example starts at 24. Recovering pretreatment information clears three confounding Bleile points, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p>
       <p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p>
       <p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p>
       <p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p>
@@ -5724,14 +5706,8 @@ void main() {
         'Specify the people, treatment strategies, outcome and time horizon you want to compare.',
       step: { number: 1, name: 'Question', anchor: 'question' },
       captions: {
-        clearable: {
-          title: 'Clarify the question',
-          subtitle: 'Specify the intended comparison.',
-        },
-        persistent: {
-          title: 'The question is underspecified',
-          subtitle: 'Needs a clearer target.',
-        },
+        clearable: 'Clarify the question',
+        persistent: 'Needs a clearer target.',
       },
     },
     {
@@ -5742,14 +5718,8 @@ void main() {
         'Align eligibility, treatment assignment and follow-up so the records represent the comparison you intended.',
       step: { number: 1, name: 'Target trial', anchor: 'trial' },
       captions: {
-        clearable: {
-          title: 'Check the study timeline',
-          subtitle: 'Align eligibility and follow-up.',
-        },
-        persistent: {
-          title: 'A gap in the study design',
-          subtitle: 'Needs a different design or argument.',
-        },
+        clearable: 'Check the study timeline',
+        persistent: 'Needs a different design or argument.',
       },
     },
     {
@@ -5760,14 +5730,8 @@ void main() {
         'Common causes of treatment choice and survival can make the groups differ before treatment. Important causes may be unrecorded.',
       step: { number: 2, name: 'Causal diagram', anchor: 'dag' },
       captions: {
-        clearable: {
-          title: 'Recover pretreatment records',
-          subtitle: 'An important common cause is now recorded.',
-        },
-        persistent: {
-          title: 'Unmeasured common causes',
-          subtitle: 'Needs more evidence or stronger assumptions.',
-        },
+        clearable: 'Recover pretreatment records',
+        persistent: 'Needs more evidence or stronger assumptions.',
       },
     },
     {
@@ -5778,14 +5742,8 @@ void main() {
         'Both treatment options must be possible for the people in the question. Sparse or missing comparisons leave parts of that question unsupported.',
       step: { number: 4, name: 'Identification', anchor: 'identify' },
       captions: {
-        clearable: {
-          title: 'Review the comparison',
-          subtitle: 'A different question needs its own assessment.',
-        },
-        persistent: {
-          title: 'Missing treatment comparisons',
-          subtitle: 'Needs comparison data or a new question.',
-        },
+        clearable: 'Review the comparison',
+        persistent: 'Needs comparison data or a new question.',
       },
     },
     {
@@ -5796,14 +5754,8 @@ void main() {
         'The treatment labels must correspond to the strategies being compared, with relevant versions of treatment specified.',
       step: { number: 4, name: 'Identification', anchor: 'identify' },
       captions: {
-        clearable: {
-          title: 'Resolve treatment coding',
-          subtitle: 'Clarify the recorded treatment versions.',
-        },
-        persistent: {
-          title: 'Ambiguous treatment versions',
-          subtitle: 'Needs a defensible treatment definition.',
-        },
+        clearable: 'Resolve treatment coding',
+        persistent: 'Needs a defensible treatment definition.',
       },
     },
     {
@@ -5814,14 +5766,8 @@ void main() {
         'Check that health, treatment and outcomes are recorded accurately, at the right times and with usable definitions.',
       step: { number: 3, name: 'Observed data', anchor: 'observed-data' },
       captions: {
-        clearable: {
-          title: 'Validate the measurements',
-          subtitle: 'Check source records and timing.',
-        },
-        persistent: {
-          title: 'Unresolved measurement error',
-          subtitle: 'Needs validation beyond these records.',
-        },
+        clearable: 'Validate the measurements',
+        persistent: 'Needs validation beyond these records.',
       },
     },
     {
@@ -5832,14 +5778,8 @@ void main() {
         'When outcomes become unavailable, explain how the remaining records can represent those lost to follow-up.',
       step: { number: 4, name: 'Identification', anchor: 'identify' },
       captions: {
-        clearable: {
-          title: 'Recover follow-up',
-          subtitle: 'Retrieve the available outcome records.',
-        },
-        persistent: {
-          title: 'Incomplete follow-up',
-          subtitle: 'Needs evidence about the people lost.',
-        },
+        clearable: 'Recover follow-up',
+        persistent: 'Needs evidence about the people lost.',
       },
     },
     {
@@ -5850,14 +5790,8 @@ void main() {
         'Choose an estimator for the target quantity and check its fit, stability and uncertainty.',
       step: { number: 6, name: 'Estimators', anchor: 'estimators' },
       captions: {
-        clearable: {
-          title: 'Check the analysis',
-          subtitle: 'Examine fit and uncertainty.',
-        },
-        persistent: {
-          title: 'Uncertain analytic fit',
-          subtitle: 'Needs further model checks.',
-        },
+        clearable: 'Check the analysis',
+        persistent: 'Needs further model checks.',
       },
     },
     {
@@ -5868,14 +5802,8 @@ void main() {
         'Ask how the conclusion changes under plausible departures from the assumptions. A reassuring check covers only the departures examined.',
       step: { number: 7, name: 'Checks', anchor: 'checks' },
       captions: {
-        clearable: {
-          title: 'Test the bias scenarios',
-          subtitle: 'Only the specified departures are checked.',
-        },
-        persistent: {
-          title: 'Untested departures remain',
-          subtitle: 'Needs a broader sensitivity argument.',
-        },
+        clearable: 'Test the bias scenarios',
+        persistent: 'Needs a broader sensitivity argument.',
       },
     },
     {
@@ -5886,14 +5814,8 @@ void main() {
         'Applying a result to different people or settings needs an argument about which differences matter for the effect.',
       step: { number: 8, name: 'Causal verdict', anchor: 'causal-verdict' },
       captions: {
-        clearable: {
-          title: 'Check the new setting',
-          subtitle: 'Reassess who the result can describe.',
-        },
-        persistent: {
-          title: 'A different population',
-          subtitle: 'Needs a separate transport argument.',
-        },
+        clearable: 'Check the new setting',
+        persistent: 'Needs a separate transport argument.',
       },
     },
   ];
@@ -5907,21 +5829,24 @@ void main() {
   //   points: the number of bugs telling this story, one Bleile point each.
   //     A component's score is the sum over both colors, at most 10.
   //   finding (optional): what the player reads before predicting the color,
-  //     in a round played with predictions. It states the concern without
-  //     saying whether it clears. A study has one for every story or for none.
-  //   title, reason, action: the inspection card and the round review.
-  //   subtitle (optional): with the title, replaces the component's caption.
+  //     in a round played with predictions: on the inspection card, in the
+  //     prediction dialog and as the story's row in the round review. It
+  //     states the concern without saying whether it clears. A study has one
+  //     for every story or for none.
+  //   reason, action: the inspection card, the round review and the result
+  //     of a prediction.
+  //   caption (optional): replaces the component's caption. In a round played
+  //     with predictions it waits until its story is predicted.
   //   reasonBeforeRepair (optional, coral only): replaces the reason while a
   //     blue bug of the same component is still uncleared.
   // A study shows the first verdict that applies. A verdict with untilRepaired
-  // follows that component's repair itself, not a point total; the last
-  // verdict always applies.
+  // applies while that component still has an uncleared blue bug; the last
+  // verdict has none and always applies.
   const SCENARIOS = [
     {
       id: 'rct',
       title: 'The trial',
       subtitle: 'A well-run randomized study',
-      card: { heading: 'Randomized', subtitle: 'Carefully designed' },
       background: '#081923',
       verdicts: [
         {
@@ -5933,7 +5858,6 @@ void main() {
         measurement: {
           clearable: {
             points: 1,
-            title: 'A survival-code discrepancy',
             reason:
               'One-year survival codes do not fully agree with the source records. The source audit can resolve the discrepancy in this trial.',
             action: 'Audit the survival codes',
@@ -5942,7 +5866,6 @@ void main() {
         censoring: {
           persistent: {
             points: 1,
-            title: 'A few outcomes are unavailable',
             reason:
               'Some randomized patients left follow-up before one year. Their survival outcomes are not in the available records.',
             action: 'Obtain follow-up or justify the missingness assumption',
@@ -5951,7 +5874,6 @@ void main() {
         sensitivity: {
           clearable: {
             points: 1,
-            title: 'The missing-outcome check is unfinished',
             reason:
               'The trial has not yet checked its specified missing-outcome scenarios. The stipulated check is reassuring within those bounds.',
             action: 'Check the specified scenarios',
@@ -5960,7 +5882,6 @@ void main() {
         transport: {
           persistent: {
             points: 2,
-            title: 'The trial enrolled a selected population',
             reason:
               'This trial excluded frailer patients treated in routine care. Randomization within the trial does not establish the effect for those patients.',
             action: 'Build a separate transport argument',
@@ -5972,7 +5893,6 @@ void main() {
       id: 'rwd',
       title: 'The records',
       subtitle: 'A carefully designed observational study',
-      card: { heading: 'Observational', subtitle: 'Recoverable information' },
       background: '#07121b',
       verdicts: [
         {
@@ -5992,8 +5912,7 @@ void main() {
             points: 1,
             finding:
               'For a small set of borderline patients, the records do not show whether they met the eligibility criteria.',
-            title: 'A few eligibility cases need review',
-            subtitle: 'The population and one-year contrast are specified.',
+            caption: 'The population and one-year contrast are specified.',
             reason:
               'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. For a small set of borderline patients the records do not show whether the criteria were met. Reviewing the same records again cannot settle who belongs in the comparison.',
             action: 'Adjudicate the remaining eligibility cases',
@@ -6004,8 +5923,7 @@ void main() {
             points: 1,
             finding:
               'For a few patients, the date of the treatment decision is missing or inconsistent in the records.',
-            title: 'A few decision dates need review',
-            subtitle: 'The study otherwise aligns time zero.',
+            caption: 'The study otherwise aligns time zero.',
             reason:
               'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. For a few patients that date is missing or inconsistent in these records. The same records cannot establish when their follow-up should start.',
             action:
@@ -6017,7 +5935,6 @@ void main() {
             points: 3,
             finding:
               'Performance status is absent from the analysis, although the pretreatment charts record it.',
-            title: 'Pretreatment function can be recovered',
             reason:
               'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',
             action: 'Recover pretreatment performance status',
@@ -6026,7 +5943,6 @@ void main() {
             points: 3,
             finding:
               'Some shared causes of treatment choice and survival were never recorded.',
-            title: 'Other common causes are unrecorded',
             reason:
               'The recovered performance status does not capture every shared cause of treatment choice and survival. Other clinically relevant baseline differences remain unrecorded.',
             reasonBeforeRepair:
@@ -6039,7 +5955,6 @@ void main() {
             points: 4,
             finding:
               'A few subgroups appear under only one of the two treatments.',
-            title: 'A few subgroups have no comparison',
             reason:
               'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',
             action: 'Seek comparison data or reassess the subgroup question',
@@ -6050,8 +5965,7 @@ void main() {
             points: 1,
             finding:
               'A few patients had a change in dose or schedule that the treatment definitions do not address.',
-            title: 'A few treatment versions need review',
-            subtitle: 'The treatment strategies are mostly consistent.',
+            caption: 'The treatment strategies are mostly consistent.',
             reason:
               'The protocol defines Treatment X and usual care consistently across clinics. A few patients had a change in dose or schedule. Whether that still counts as the same strategy is a decision about the definition, and no record can make it.',
             action: 'Decide which treatment versions each strategy includes',
@@ -6062,7 +5976,6 @@ void main() {
             points: 1,
             finding:
               'One specified coding discrepancy is unchecked, and the source charts for it are on hand.',
-            title: 'One validation check remains',
             reason:
               'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',
             action: 'Complete the source-record validation',
@@ -6071,7 +5984,6 @@ void main() {
             points: 2,
             finding:
               'A small set of health and survival records has no source documentation.',
-            title: 'A limited validation gap remains',
             reason:
               'Most health and survival records have been checked, but a small set lacks source documentation. Auditing the available charts does not validate those missing sources.',
             action: 'Obtain validation for the remaining records',
@@ -6082,7 +5994,6 @@ void main() {
             points: 2,
             finding:
               'A small group left follow-up before one year, and their outcomes are unknown.',
-            title: 'Follow-up is nearly complete',
             reason:
               'One-year survival is known for most patients. A small group left follow-up, and the remaining records do not establish how their outcomes compare with those retained.',
             action: 'Recover the missing outcomes or assess their impact',
@@ -6093,7 +6004,6 @@ void main() {
             points: 2,
             finding:
               'Estimates in small subgroups shift with the modeling choices.',
-            title: 'The main analysis has been checked',
             reason:
               'Basic fit and uncertainty checks are complete for the main comparison. Estimates in small subgroups remain sensitive to modeling choices.',
             action: 'Check stability in the sparse subgroups',
@@ -6104,7 +6014,6 @@ void main() {
             points: 1,
             finding:
               'The prespecified bias scenarios have not been examined yet.',
-            title: 'Specified bias scenarios are unchecked',
             reason:
               'The analysis has not yet examined its prespecified departures from the assumptions. In this example the checked range gives reassuring results.',
             action: 'Examine the specified bias scenarios',
@@ -6113,7 +6022,6 @@ void main() {
             points: 1,
             finding:
               'Bias larger than, or different from, the prespecified scenarios is outside the planned check.',
-            title: 'Other departures remain untested',
             reason:
               'The reassuring sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
             reasonBeforeRepair:
@@ -6126,7 +6034,6 @@ void main() {
             points: 2,
             finding:
               'These records come from selected clinics, and the result may be applied elsewhere.',
-            title: 'Transfer beyond these clinics needs review',
             reason:
               'These records come from selected clinics with a defined study population. Applying the one-year comparison in other settings still needs evidence about relevant differences.',
             action: 'Assess the intended new population',
@@ -6138,7 +6045,6 @@ void main() {
       id: 'poor',
       title: 'The tangle',
       subtitle: 'A poorly specified and poorly designed study',
-      card: { heading: 'Poorly specified', subtitle: 'Gaps throughout' },
       background: '#10111c',
       verdicts: [
         {
@@ -6150,7 +6056,6 @@ void main() {
         question: {
           persistent: {
             points: 10,
-            title: 'The study never settled its target',
             reason:
               'Eligibility, Treatment X, usual care and the start of the one-year survival window were chosen inconsistently. The reported comparison has no stable target.',
             action: 'Specify a coherent question and reassess',
@@ -6159,7 +6064,6 @@ void main() {
         design: {
           persistent: {
             points: 10,
-            title: 'Treatment is assigned after follow-up starts',
             reason:
               'Patients are labelled treated if they later receive Treatment X, while follow-up starts at clinic entry. Survival before treatment is therefore built into group assignment.',
             action: 'Redesign time zero and treatment assignment',
@@ -6168,14 +6072,12 @@ void main() {
         confounding: {
           clearable: {
             points: 6,
-            title: 'Baseline charts were left unused',
             reason:
               'Pretreatment performance status is missing from the analysis even though some charts contain it. Recovering it can reduce this concern without repairing the study timeline.',
             action: 'Recover the available baseline charts',
           },
           persistent: {
             points: 4,
-            title: 'Treatment decisions remain poorly explained',
             reason:
               'Important reasons for choosing Treatment X were never recorded. Recovering the available charts leaves other common causes of treatment and survival unresolved.',
             action: 'Obtain new evidence about treatment decisions',
@@ -6184,7 +6086,6 @@ void main() {
         positivity: {
           persistent: {
             points: 10,
-            title: 'The groups scarcely overlap',
             reason:
               'Treatment X is concentrated in patient profiles that have no usual-care counterparts in these records. Better coding cannot supply those missing comparisons.',
             action: 'Collect comparison data or redefine the question',
@@ -6193,14 +6094,12 @@ void main() {
         consistency: {
           clearable: {
             points: 4,
-            title: 'Several treatment codes can be untangled',
             reason:
               'Some entries combine different Treatment X regimens, but source prescriptions identify their dose and schedule. These available records can resolve part of the ambiguity.',
             action: 'Recover dose and schedule from prescriptions',
           },
           persistent: {
             points: 5,
-            title: 'Other treatment versions remain ambiguous',
             reason:
               'Some prescriptions are missing and usual care was never specified consistently. Resolving available codes does not establish a coherent treatment strategy.',
             action: 'Define strategies and obtain missing treatment detail',
@@ -6209,14 +6108,12 @@ void main() {
         measurement: {
           clearable: {
             points: 4,
-            title: 'Source records can fix some coding errors',
             reason:
               'Several health and survival codes conflict with source charts that are still available. A chart audit can correct those documented errors.',
             action: 'Audit the available source charts',
           },
           persistent: {
             points: 5,
-            title: 'Much of the measurement cannot be checked',
             reason:
               'Other outcomes and baseline health measures lack source documentation or reliable dates. A partial chart audit cannot validate those records.',
             action: 'Obtain reliable measurement and timing data',
@@ -6225,7 +6122,6 @@ void main() {
         censoring: {
           persistent: {
             points: 9,
-            title: 'Loss to follow-up is extensive',
             reason:
               'Many patients vanish from the dataset before one-year survival is known. The study did not record why they left or obtain outcomes elsewhere.',
             action: 'Recover follow-up and investigate the losses',
@@ -6234,7 +6130,6 @@ void main() {
         estimation: {
           persistent: {
             points: 9,
-            title: 'The model does not match the intended comparison',
             reason:
               'The analysis pools incompatible follow-up windows and extrapolates across sparse treatment groups. A precise model output would not repair those design gaps.',
             action: 'Rebuild the design before reassessing the estimator',
@@ -6243,14 +6138,12 @@ void main() {
         sensitivity: {
           clearable: {
             points: 2,
-            title: 'A limited bias check is available',
             reason:
               'The team can examine a few prespecified coding and confounding scenarios. The stipulated results narrow concern within that range only.',
             action: 'Run the available bias scenarios',
           },
           persistent: {
             points: 7,
-            title: 'Major departures are still unexamined',
             reason:
               'The available sensitivity scenarios do not cover the flawed timeline, missing comparisons or extensive loss to follow-up.',
             action: 'Reassess the unresolved design and bias mechanisms',
@@ -6259,7 +6152,6 @@ void main() {
         transport: {
           persistent: {
             points: 9,
-            title: 'The claim extends far beyond these records',
             reason:
               'The study claims an effect for routine-care patients broadly, but its convenience sample comes from a few atypical clinics. The necessary transport argument is absent.',
             action: 'Name the target population and gather transport evidence',
@@ -6314,7 +6206,7 @@ void main() {
     return value;
   };
   const KINDS = ['clearable', 'persistent'];
-  // A round played with predictions records the player's call for each story.
+  // A round played with predictions records the player's prediction for each story.
   function initialState(scenario = 'rwd', { predict = false } = {}) {
     const source = config(scenario),
       bugs = [];
@@ -6359,13 +6251,13 @@ void main() {
     for (const id of componentIds)
       if (counts[id] !== source.scores[id])
         throw new RangeError('The initial infestation must be preserved.');
-    const calls = state.predictions;
+    const predictions = state.predictions;
     if (
-      calls !== undefined &&
+      predictions !== undefined &&
       !(
-        calls &&
-        typeof calls === 'object' &&
-        Object.values(calls).every((kind) => KINDS.includes(kind))
+        predictions &&
+        typeof predictions === 'object' &&
+        Object.values(predictions).every((kind) => KINDS.includes(kind))
       )
     )
       throw new TypeError('Invalid predictions.');
@@ -6388,30 +6280,61 @@ void main() {
     );
   // A story with a finding shows no color until the player has predicted it.
   const storyKey = (bug) => bug.component + '-' + bug.kind;
-  const unjudged = (bug, state) =>
+  const unpredicted = (bug, state) =>
     !!state.predictions &&
     !!storyOf(bug, state)?.finding &&
     !state.predictions[storyKey(bug)];
-  function awaitsPrediction(bug, state) {
-    assertState(state);
-    return unjudged(bug, state);
-  }
+  // While a study has findings left to predict, anything that would give an
+  // answer away is withheld.
+  const withheld = (state) => state.bugs.some((b) => unpredicted(b, state));
+  // Where a bug stands. The heading titles its group in the round review, the
+  // status names it in the bug's details, and an action, where given,
+  // replaces the story's.
+  const STATUSES = freeze([
+    {
+      id: 'unpredicted',
+      heading: 'Not yet predicted',
+      status: 'Not yet predicted',
+      action: 'Predict whether it will clear or stay',
+    },
+    {
+      id: 'repairable',
+      heading: 'Still repairable',
+      status: 'Available repair',
+    },
+    {
+      id: 'persistent',
+      heading: 'Unresolved with these tools',
+      status: 'Unresolved with these tools',
+    },
+    {
+      id: 'repaired',
+      heading: 'Repaired this round',
+      status: 'Cleared in this example',
+      action: 'Resolved within this example',
+    },
+  ]);
+  const statusOf = (bug, state) =>
+    unpredicted(bug, state)
+      ? 'unpredicted'
+      : bug.cleared
+        ? 'repaired'
+        : bug.kind === 'clearable'
+          ? 'repairable'
+          : 'persistent';
   function getBugText(bug, state) {
     if (state) assertState(state);
     if (!bug || !componentIds.includes(bug.component))
       throw new RangeError('Unknown bug component.');
-    if (state && unjudged(bug, state))
-      return freeze({
-        title: 'Not yet judged',
-        subtitle: 'Will it clear, or will it stay?',
-      });
-    // A story with its own subtitle replaces the component's caption.
-    const story = state && storyOf(bug, state);
-    if (story?.subtitle)
-      return freeze({ title: story.title, subtitle: story.subtitle });
-    const { title, subtitle } = COMPONENTS.find((c) => c.id === bug.component)
-      .captions[bug.kind === 'clearable' ? 'clearable' : 'persistent'];
-    return freeze({ title, subtitle });
+    if (state && unpredicted(bug, state))
+      return 'Will it clear, or will it stay?';
+    // A story with its own caption replaces the component's.
+    return (
+      (state && storyOf(bug, state)?.caption) ||
+      COMPONENTS.find((c) => c.id === bug.component).captions[
+        bug.kind === 'clearable' ? 'clearable' : 'persistent'
+      ]
+    );
   }
   function getBugDetails(bug, state) {
     assertState(state);
@@ -6428,31 +6351,21 @@ void main() {
     const detail = storyOf(current, state);
     if (!detail)
       throw new RangeError('No story exists for this bug in this study.');
-    // Until the call is made, the finding stands in for the story.
-    const waiting = unjudged(current, state);
-    const reason = waiting
-      ? detail.finding
-      : (repairPending(state, current.component) &&
-          detail.reasonBeforeRepair) ||
-        detail.reason;
+    // Until the prediction is made, the finding stands in for the story.
+    const standing = STATUSES.find((s) => s.id === statusOf(current, state));
+    const reason =
+      standing.id === 'unpredicted'
+        ? detail.finding
+        : (repairPending(state, current.component) &&
+            detail.reasonBeforeRepair) ||
+          detail.reason;
     return freeze({
       component: c.id,
       label: c.label,
       score: scores(state)[c.id],
-      title: waiting ? detail.finding : detail.title,
       reason,
-      action: waiting
-        ? 'Predict whether it will clear or stay'
-        : current.cleared
-          ? 'Resolved within this example'
-          : detail.action,
-      status: waiting
-        ? 'Not yet judged'
-        : current.cleared
-          ? 'Cleared in this example'
-          : current.kind === 'clearable'
-            ? 'Available repair'
-            : 'Unresolved with these tools',
+      action: standing.action || detail.action,
+      status: standing.status,
       sizeNote:
         'Size follows this component’s concern level; each bug is one Bleile point.',
     });
@@ -6469,37 +6382,34 @@ void main() {
   );
   const POINTS_NOTE =
     'Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
-  const DEBRIEF_STATUSES = freeze([
-    { id: 'unjudged', heading: 'Not yet judged' },
-    { id: 'repairable', heading: 'Still repairable' },
-    { id: 'persistent', heading: 'Unresolved with these tools' },
-    { id: 'repaired', heading: 'Repaired this round' },
-  ]);
   const points = (n) => n + ' Bleile point' + (n === 1 ? '' : 's');
-  const statusOf = (bug, state) =>
-    unjudged(bug, state)
-      ? 'unjudged'
-      : bug.cleared
-        ? 'repaired'
-        : bug.kind === 'clearable'
-          ? 'repairable'
-          : 'persistent';
-  const storiesOf = (source) =>
-    Object.entries(source.concerns).flatMap(([component, stories]) =>
-      Object.entries(stories).map(([kind, story]) => ({
-        key: component + '-' + kind,
-        kind,
-        story,
-      })),
+  // How many stories ask for a prediction, how many the player has made and
+  // how many were right.
+  function predictionTally(source, predictions) {
+    const stories = Object.entries(source.concerns).flatMap(
+      ([component, kinds]) =>
+        Object.entries(kinds).map(([kind, story]) => ({
+          guess: predictions[storyKey({ component, kind })],
+          kind,
+          story,
+        })),
     );
-  // The debrief is read from the bugs as they are now: their component, kind
-  // and cleared flag. Bugs that tell the same story share one row.
+    const guessed = stories.filter((s) => s.guess);
+    return {
+      total: stories.filter((s) => s.story.finding).length,
+      made: guessed.length,
+      correct: guessed.filter((s) => s.guess === s.kind).length,
+    };
+  }
+  // The debrief is read from the bugs as they are now (component, kind and
+  // cleared flag) and from the predictions made. Bugs that tell the same story
+  // share one row.
   function debrief(state) {
     assertState(state);
     const source = config(state.scenario),
       rows = new Map();
     const tally = () => ({
-      ...(state.predictions && { unjudged: 0 }),
+      ...(state.predictions && { unpredicted: 0 }),
       repairable: 0,
       repaired: 0,
       persistent: 0,
@@ -6523,10 +6433,13 @@ void main() {
           status,
           points: 0,
           found: 0,
+          // Headed by the repair made, the finding to predict, or the component.
           title:
             status === 'repaired'
-              ? source.concerns[bug.component].clearable.action
-              : detail.title,
+              ? storyOf(bug, state).action
+              : status === 'unpredicted'
+                ? detail.reason
+                : c.label,
           reason: detail.reason,
           action: detail.action,
           matters: c.definition,
@@ -6539,11 +6452,23 @@ void main() {
       row.points++;
       if (bug.seen) row.found++;
     }
+    // Bugs come blue first within a component, so within a component the
+    // unpredicted rows are put in order of their wording: position must not
+    // give the color away.
+    const place = (r) => componentIds.indexOf(r.component);
     const list = [...rows.values()],
-      complete = counts.repairable === 0 && !counts.unjudged;
-    const made = storiesOf(source).filter((s) => state.predictions?.[s.key]);
-    const summary = counts.unjudged
-      ? points(counts.unjudged) + ' still await your prediction.'
+      rowsOf = (status) => {
+        const found = list.filter((r) => r.status === status);
+        return status === 'unpredicted'
+          ? found.sort(
+              (a, b) =>
+                place(a) - place(b) || a.title.localeCompare(b.title, 'en'),
+            )
+          : found;
+      },
+      complete = counts.repairable === 0 && !counts.unpredicted;
+    const summary = counts.unpredicted
+      ? points(counts.unpredicted) + ' not yet predicted.'
       : !complete
         ? (counts.repaired
             ? 'You have repaired ' + points(counts.repaired) + ' so far. '
@@ -6555,25 +6480,23 @@ void main() {
           ' unresolved.';
     return freeze({
       scenario: state.scenario,
-      study: { title: source.title, subtitle: source.subtitle },
+      study: { title: source.title },
       verdict: verdict(state),
-      remaining: (counts.unjudged || 0) + counts.repairable + counts.persistent,
+      remaining: total(state),
       counts,
       complete,
       summary,
       pointsNote: POINTS_NOTE,
       ...(state.predictions && {
-        predictions: {
-          total: storiesOf(source).filter((s) => s.story.finding).length,
-          made: made.length,
-          correct: made.filter((s) => state.predictions[s.key] === s.kind)
-            .length,
-        },
+        predictions: predictionTally(source, state.predictions),
       }),
-      groups: DEBRIEF_STATUSES.filter((s) => s.id in counts).map((s) => ({
-        ...s,
+      groups: STATUSES.filter(
+        (s) => s.id !== 'unpredicted' || counts.unpredicted,
+      ).map((s) => ({
+        id: s.id,
+        heading: s.heading,
         points: counts[s.id],
-        rows: list.filter((r) => r.status === s.id),
+        rows: rowsOf(s.id),
       })),
     });
   }
@@ -6582,12 +6505,14 @@ void main() {
     assertState(state);
     const bug = state.bugs.find((b) => b.id === id);
     if (!bug) throw new RangeError('Unknown bug: ' + id);
-    const waiting = unjudged(bug, state);
     if (
       (kind === 'reveal' && bug.seen) ||
       (kind === 'clear' &&
-        (bug.cleared || !bug.seen || bug.kind !== 'clearable' || waiting)) ||
-      (kind === 'predict' && (!bug.seen || !waiting))
+        (bug.cleared ||
+          !bug.seen ||
+          bug.kind !== 'clearable' ||
+          unpredicted(bug, state))) ||
+      (kind === 'predict' && (!bug.seen || !unpredicted(bug, state)))
     )
       return freeze({ state, event: null });
     const before = total(state),
@@ -6600,10 +6525,7 @@ void main() {
       kind === 'predict'
         ? { ...state.predictions, [storyKey(bug)]: guess }
         : state.predictions;
-    const text = getBugText(
-      bug,
-      predictions ? { ...state, predictions } : state,
-    );
+    const caption = getBugText(bug, { ...state, predictions });
     const event = {
       kind,
       bugId: id,
@@ -6611,7 +6533,7 @@ void main() {
       delta: kind === 'clear' ? -1 : 0,
       before,
       after: before - (kind === 'clear' ? 1 : 0),
-      ...text,
+      caption,
       ...(kind === 'predict' && { guess, correct: guess === bug.kind }),
     };
     const next = {
@@ -6624,7 +6546,7 @@ void main() {
   }
   const reveal = (state, id) => transition(state, id, 'reveal');
   const clear = (state, id) => transition(state, id, 'clear');
-  // One call settles every bug of that story, and it cannot be changed.
+  // One prediction settles every bug of that story, and it cannot be changed.
   function predict(state, id, guess) {
     if (!KINDS.includes(guess))
       throw new RangeError('Unknown prediction: ' + guess);
@@ -6632,10 +6554,10 @@ void main() {
   }
   function verdict(state) {
     assertState(state);
-    // The verdict would give calls away, so it waits for them.
-    if (state.bugs.some((b) => unjudged(b, state)))
+    // The verdict would give predictions away, so it waits for them.
+    if (withheld(state))
       return freeze({
-        heading: 'Your calls come first',
+        heading: 'Predictions come first',
         subtitle: 'Predict each concern to see what this study can repair.',
       });
     const { heading, subtitle } = config(state.scenario).verdicts.find(
@@ -6654,7 +6576,8 @@ void main() {
     reveal,
     clear,
     predict,
-    awaitsPrediction,
+    unpredicted,
+    withheld,
     verdict,
     getBugText,
     getBugDetails,
@@ -6694,12 +6617,12 @@ void main() {
       reticle: '#ffc0ac',
       label: 'coral, reveal only',
     },
-    unknown: {
+    unpredicted: {
       body: 'pale',
       eye: 'paleEye',
       legs: '#cfc8b0',
       reticle: '#f3ecd4',
-      label: 'not yet judged',
+      label: 'not yet predicted',
     },
   };
   const lookOf = (kind) => LOOKS[kind] || LOOKS.persistent;
@@ -6965,12 +6888,7 @@ void main() {
       };
       this.initLightMask();
       for (const name of [
-        'cyan',
-        'coral',
-        'pale',
-        'cyanEye',
-        'coralEye',
-        'paleEye',
+        ...Object.values(LOOKS).flatMap((look) => [look.body, look.eye]),
         'pupil',
       ])
         this.maskBugMaterial(this.materials[name]);
@@ -8367,8 +8285,8 @@ void main() {
   'use strict';
   const $ = (id) => document.getElementById(id),
     G = window.BleileGame;
-  // Opened with ?predict, a study that has findings asks for a call on each
-  // concern before its color is shown.
+  // Opened with ?predict, a study that has findings asks for a prediction on
+  // each concern before its color is shown.
   const predict = new URLSearchParams(location.search).has('predict');
   const states = Object.fromEntries(
     G.SCENARIOS.map((s) => [s.id, G.initialState(s.id, { predict })]),
@@ -8376,6 +8294,7 @@ void main() {
   let state = states.rwd,
     selected = null,
     asked = null,
+    opener = null,
     sound = false,
     audio = null,
     light = true,
@@ -8386,9 +8305,28 @@ void main() {
     hintTimer,
     cycle = 0,
     renderQueued = false;
-  // A bug that still awaits the player's call shows no color.
+  // A bug whose story is not yet predicted shows no color.
   const kindOf = (bug) =>
-    predict && G.awaitsPrediction(bug, state) ? 'unknown' : bug.kind;
+    G.unpredicted(bug, state) ? 'unpredicted' : bug.kind;
+  const CLOSING =
+    'Every available repair is done. Open Review this round for your closing debrief.';
+  // What the player reads for each kind of bug.
+  const KIND_COPY = {
+    clearable: {
+      color: 'blue',
+      card: 'Blue · available repair',
+      found: 'Blue. Hold Space to clear.',
+    },
+    persistent: {
+      color: 'coral',
+      card: 'Coral · reveal only',
+      found: 'Coral. Reveal only.',
+    },
+    unpredicted: {
+      card: 'Pale · not yet predicted',
+      found: 'Not yet predicted. Press Space to predict its color.',
+    },
+  };
   const icon =
     '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 26 29 9l26 10v32L31 59 9 49Z M9 26l22 10 24-17 M31 36v23 M29 9l2 27 M9 26v23 M18 18l23 9v28 M40 13l-19 18v23 M9 39l22 10 24-16"/><path d="m18 46 10 4v-9l-10-4z" opacity=".3"/></svg>';
   for (const [i, s] of G.SCENARIOS.entries()) {
@@ -8396,7 +8334,7 @@ void main() {
     button.className = 'house-card';
     button.dataset.scenario = s.id;
     button.setAttribute('aria-pressed', String(s.id === state.scenario));
-    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.card.heading}</h3><p>${s.card.subtitle}</p><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
+    button.innerHTML = `<span class="number">0${i + 1}</span>${icon}<div><h3>${s.title}</h3><span class="card-score"><b>${G.total(states[s.id])}</b> <span>Bleile points</span></span></div>`;
     button.addEventListener('click', () => switchScenario(s.id));
     $('houses').append(button);
   }
@@ -8461,26 +8399,26 @@ void main() {
   }
   function updateFocusButton(bug) {
     const kind = bug && kindOf(bug),
-      waiting = kind === 'unknown',
+      unpredicted = kind === 'unpredicted',
       blue = kind === 'clearable' && !bug.cleared,
       canClear = blue && light;
-    $('focus').disabled = !(canClear || (waiting && light));
+    $('focus').disabled = !(canClear || (unpredicted && light));
     $('focus-label').textContent = canClear
       ? 'Hold to neutralize'
-      : blue || waiting
-        ? light
-          ? 'Predict its color'
-          : 'Turn spotlight on'
-        : bug
-          ? 'Reveal only'
-          : 'Aim at a bug';
+      : unpredicted && light
+        ? 'Predict its color'
+        : blue || unpredicted
+          ? 'Turn spotlight on'
+          : bug
+            ? 'Reveal only'
+            : 'Aim at a bug';
     $('focus').setAttribute(
       'aria-label',
       canClear
         ? 'Hold to neutralize this blue bug'
         : blue
           ? 'Turn the spotlight on to neutralize this blue bug'
-          : waiting
+          : unpredicted
             ? light
               ? 'Predict whether this bug is blue or coral'
               : 'Turn the spotlight on to predict this bug'
@@ -8520,12 +8458,7 @@ void main() {
     $('inspect-name').textContent = detail.label;
     $('inspect-score').textContent = detail.score + ' / 10';
     $('inspect-reason').textContent = detail.reason;
-    $('inspect-kind').textContent =
-      kind === 'clearable'
-        ? 'Blue · available repair'
-        : kind === 'unknown'
-          ? 'Pale · not yet judged'
-          : 'Coral · reveal only';
+    $('inspect-kind').textContent = KIND_COPY[kind].card;
     $('inspect-action').textContent = detail.action;
     $('inspect-size').textContent = detail.sizeNote;
     $('inspection').hidden = false;
@@ -8559,24 +8492,21 @@ void main() {
           : kind === 'clearable'
             ? 'hold to neutralize'
             : 'predict its color');
-    $('focus-subtitle').textContent =
-      kind === 'clearable' ? copy.title : copy.subtitle;
+    $('focus-subtitle').textContent = copy;
     updateFocusButton(bug);
     showInspection(bug);
   }
-  function transition(kind, id) {
+  function transition(kind, id, guess) {
     const bug = state.bugs.find((b) => b.id === id);
-    if (!bug) return;
-    const result = G[kind](state, id);
-    if (!result.event) return;
+    if (!bug) return null;
+    const result = G[kind](state, id, guess);
+    if (!result.event) return null;
     state = result.state;
     states[state.scenario] = state;
     if (kind === 'reveal') scheduleRender();
     else render();
     if (kind === 'clear') {
-      const done = !state.bugs.some(
-        (b) => kindOf(b) !== 'persistent' && !b.cleared,
-      );
+      const done = G.debrief(state).complete;
       tone('clear');
       toast(
         '−1 ' +
@@ -8584,30 +8514,34 @@ void main() {
           (done ? ' · closing debrief ready' : ''),
       );
       $('announcement').textContent =
-        result.event.title +
+        result.event.caption +
         '. ' +
         points(G.total(state)) +
         ' remain' +
         (G.total(state) === 1 ? 's' : '') +
         '.' +
-        (done
-          ? ' Every available repair is done. Open Review this round for your closing debrief.'
-          : '');
+        (done ? ' ' + CLOSING : '');
       if (selected === id) {
         $('focus-title').textContent = 'One concern cleared.';
-        $('focus-subtitle').textContent = G.getBugText(bug, state).title;
+        $('focus-subtitle').textContent = G.getBugText(bug, state);
         selected = null;
         $('inspection').hidden = true;
         updateFocusButton(null);
       }
     }
     dismissHint();
+    return result.event;
   }
-  // The call is made in a dialog, so the pointer is free to choose.
-  function askPrediction(bug) {
-    const detail = G.getBugDetails(bug, state);
+  // The spotlight follows the pointer, so the choice is offered in a dialog.
+  function askPrediction() {
+    const bug = state.bugs.find((b) => b.id === selected);
+    if (!light || !bug || kindOf(bug) !== 'unpredicted') return;
     setFocusing(false);
+    if ($('predict').open || $('world').classList.contains('graphics-paused'))
+      return;
+    const detail = G.getBugDetails(bug, state);
     asked = bug.id;
+    opener = document.activeElement;
     $('predict-title').textContent = detail.label;
     $('predict-finding').textContent = detail.reason;
     $('predict-ask').hidden = false;
@@ -8616,31 +8550,32 @@ void main() {
     $('predict-title').focus();
   }
   function answerPrediction(guess) {
+    // A prediction needs a seen bug.
     transition('reveal', asked);
-    const result = G.predict(state, asked, guess);
-    if (!result.event) {
+    const event = transition('predict', asked, guess);
+    // A second activation finds the story already predicted.
+    if (!event) {
       $('predict').close();
       return;
     }
-    state = result.state;
-    states[state.scenario] = state;
-    render();
-    if (selected === asked) select(asked);
+    if (selected) select(selected);
+    syncAvailability();
     const bug = state.bugs.find((b) => b.id === asked),
       detail = G.getBugDetails(bug, state);
     $('predict-result').dataset.kind = bug.kind;
     $('predict-outcome').textContent =
-      (result.event.correct ? 'Correct. ' : 'Not this time. ') +
-      (bug.kind === 'clearable'
-        ? 'It is blue: this study can clear it.'
-        : 'It is coral: it stays.');
+      (event.correct ? 'Correct. ' : 'Not this time. ') +
+      'It is ' +
+      KIND_COPY[bug.kind].color +
+      ': this study ' +
+      (bug.kind === 'clearable' ? 'can' : 'cannot') +
+      ' clear it.';
     $('predict-reason').textContent = detail.reason;
     $('predict-action').textContent =
       detail.status + ': ' + detail.action + '.';
     $('predict-ask').hidden = true;
     $('predict-result').hidden = false;
     $('predict-continue').focus();
-    dismissHint();
   }
   function scheduleRender() {
     if (renderQueued) return;
@@ -8670,6 +8605,9 @@ void main() {
     $('cleared').textContent = state.bugs.filter((b) => b.cleared).length;
     $('verdict-title').textContent = v.heading;
     $('verdict-subtitle').textContent = v.subtitle;
+    const withheld = G.withheld(state);
+    $('legend-pale').hidden = !withheld;
+    $('profile-bars').classList.toggle('withheld', withheld);
     if ($('profile').open) renderDebrief();
     for (const row of $('profile-bars').children) {
       row.querySelector('b').textContent =
@@ -8686,7 +8624,7 @@ void main() {
     }
     scene.setState({
       ...state,
-      bugs: predict
+      bugs: state.predictions
         ? state.bugs.map((b) => ({ ...b, kind: kindOf(b) }))
         : state.bugs,
       scores: profile,
@@ -8713,21 +8651,23 @@ void main() {
     count.setAttribute('aria-label', points(row.points));
     summary.append(document.createTextNode(row.title + ' '), count);
     details.append(summary);
-    if (row.status !== 'unjudged') details.append(el('p', '', row.reason));
+    if (row.status !== 'unpredicted') details.append(el('p', '', row.reason));
     details.append(el('p', '', row.matters));
     if (row.guess)
       details.append(
         el(
           'p',
           '',
-          'You called it ' +
-            (row.guess === 'clearable' ? 'blue' : 'coral') +
+          'You predicted ' +
+            KIND_COPY[row.guess].color +
             (row.correct ? ': correct.' : ': not this time.'),
         ),
       );
     if (row.status === 'repaired') {
       const remaining =
-        row.sameComponent.repairable + row.sameComponent.persistent;
+        row.sameComponent.repairable +
+        row.sameComponent.persistent +
+        (row.sameComponent.unpredicted || 0);
       if (remaining)
         details.append(
           el(
@@ -8774,49 +8714,50 @@ void main() {
       ? 'Closing debrief'
       : 'Round review';
     $('profile-subtitle').textContent =
-      d.study.title +
-      ' · ' +
-      d.study.subtitle +
-      ' · ' +
-      points(d.remaining) +
-      ' remaining';
+      d.study.title + ' · ' + points(d.remaining) + ' remaining';
     $('debrief-verdict').textContent =
       d.verdict.heading + '. ' + d.verdict.subtitle;
     $('debrief-summary').textContent = d.summary;
-    const calls = d.predictions,
-      left = calls ? calls.total - calls.made : 0;
-    $('debrief-calls').hidden = !calls?.total;
-    if (calls?.total)
-      $('debrief-calls').textContent = [
-        calls.made &&
-          'Your calls: ' + calls.correct + ' of ' + calls.made + ' correct.',
-        left && left + (left === 1 ? ' call' : ' calls') + ' still to make.',
+    const tally = d.predictions;
+    $('debrief-predictions').hidden = !tally?.total;
+    if (tally?.total) {
+      const left = tally.total - tally.made;
+      $('debrief-predictions').textContent = [
+        tally.made &&
+          'Your predictions: ' +
+            tally.correct +
+            ' of ' +
+            tally.made +
+            ' correct.',
+        left &&
+          left +
+            (left === 1 ? ' prediction' : ' predictions') +
+            ' still to make.',
       ]
         .filter(Boolean)
         .join(' ');
+    }
     $('debrief-note').textContent = d.pointsNote;
     box.replaceChildren(
-      ...d.groups
-        .filter((group) => group.id !== 'unjudged' || group.points)
-        .map((group) => {
-          const section = el('section', 'debrief-group'),
-            heading = el('h3'),
-            id = 'debrief-' + group.id;
-          section.dataset.status = group.id;
-          heading.id = id;
-          section.setAttribute('aria-labelledby', id);
-          heading.append(
-            el('span', '', group.heading),
-            el('span', 'debrief-count', points(group.points)),
-          );
-          section.append(heading);
-          if (group.rows.length) {
-            const list = el('ul', 'debrief-rows');
-            list.append(...group.rows.map(debriefRow));
-            section.append(list);
-          }
-          return section;
-        }),
+      ...d.groups.map((group) => {
+        const section = el('section', 'debrief-group'),
+          heading = el('h3'),
+          id = 'debrief-' + group.id;
+        section.dataset.status = group.id;
+        heading.id = id;
+        section.setAttribute('aria-labelledby', id);
+        heading.append(
+          el('span', '', group.heading),
+          el('span', 'debrief-count', points(group.points)),
+        );
+        section.append(heading);
+        if (group.rows.length) {
+          const list = el('ul', 'debrief-rows');
+          list.append(...group.rows.map(debriefRow));
+          section.append(list);
+        }
+        return section;
+      }),
     );
   }
   function syncAvailability() {
@@ -8885,24 +8826,19 @@ void main() {
     focusing = value;
     scene.setFocusing(value);
     $('focus').classList.toggle('active', value);
-    // A press on an unjudged bug asks for the call instead of starting a repair.
-    const bug = value && state.bugs.find((b) => b.id === selected);
-    if (bug && kindOf(bug) === 'unknown') askPrediction(bug);
+    // The scene has now aimed this press at a bug. On an unpredicted bug the
+    // press asks for the prediction instead of starting a repair.
+    if (value) askPrediction();
   }
   function findNext() {
     if (!scene.getDebug().available || $('scene').hidden) return;
     const remaining = state.bugs.filter((b) => !b.cleared);
     if (!remaining.length) return;
     const unseen = remaining.filter((b) => !b.seen);
-    const waiting = remaining.filter((b) => kindOf(b) === 'unknown');
+    const unpredicted = remaining.filter((b) => kindOf(b) === 'unpredicted');
     const blue = remaining.filter((b) => kindOf(b) === 'clearable');
-    const pool = unseen.length
-      ? unseen
-      : waiting.length
-        ? waiting
-        : blue.length
-          ? blue
-          : remaining;
+    const pool =
+      [unseen, unpredicted, blue].find((bugs) => bugs.length) || remaining;
     const b = pool[cycle % pool.length];
     cycle++;
     setLight(true);
@@ -8912,11 +8848,7 @@ void main() {
     $('announcement').textContent =
       G.COMPONENTS.find((c) => c.id === b.component).short +
       '. ' +
-      (kindOf(b) === 'clearable'
-        ? 'Blue. Hold Space to clear.'
-        : kindOf(b) === 'unknown'
-          ? 'Not yet judged. Press Space to predict its color.'
-          : 'Coral. Reveal only.');
+      KIND_COPY[kindOf(b)].found;
   }
   for (const b of document.querySelectorAll('[data-predict]'))
     b.addEventListener('click', () => answerPrediction(b.dataset.predict));
@@ -8943,6 +8875,26 @@ void main() {
   });
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
     $('focus').addEventListener(type, () => setFocusing(false));
+  // Enter and assistive technology send a click with no pointer press, on the
+  // main button or a bug. A repair needs a hold, but a prediction does not.
+  $('focus').addEventListener('click', (e) => {
+    if (e.detail === 0) askPrediction();
+  });
+  // The pointer may have moved the spotlight since this bug took focus.
+  $('hotspots').addEventListener('click', (e) => {
+    if (e.detail !== 0) return;
+    scene.aimAt(e.target.dataset.bug);
+    askPrediction();
+  });
+  $('predict').addEventListener('close', () => {
+    // A coral prediction disables the main button, which then cannot take
+    // focus back.
+    if (opener?.disabled) $('find-next').focus();
+    // A prediction can be the action that completes the round.
+    if (!G.debrief(state).complete) return;
+    toast('Closing debrief ready');
+    $('announcement').textContent = CLOSING;
+  });
   document.addEventListener('keydown', (e) => {
     if (
       e.code !== 'Space' ||
@@ -8994,6 +8946,8 @@ void main() {
     $(button).addEventListener('click', () => {
       setFocusing(false);
       if (dialog === 'profile') renderDebrief();
+      if (dialog === 'notes')
+        $('notes-example').hidden = Object.values(states).some(G.withheld);
       $(dialog).showModal();
       $(dialog).scrollTop = 0;
     });
@@ -9012,11 +8966,9 @@ void main() {
       )
         dialog.close();
     });
-  if (predict) {
-    $('legend-pale').hidden = false;
+  if (predict)
     $('beam-instruction').textContent =
       'Inspect a bug and predict its color. Then hold on blue to clear.';
-  }
   render();
   hintTimer = setTimeout(dismissHint, 6000);
   window.BleileApp = {

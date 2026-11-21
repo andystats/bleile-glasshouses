@@ -41,7 +41,7 @@
     return value;
   };
   const KINDS = ['clearable', 'persistent'];
-  // A round played with predictions records the player's call for each story.
+  // A round played with predictions records the player's prediction for each story.
   function initialState(scenario = 'rwd', { predict = false } = {}) {
     const source = config(scenario),
       bugs = [];
@@ -86,13 +86,13 @@
     for (const id of componentIds)
       if (counts[id] !== source.scores[id])
         throw new RangeError('The initial infestation must be preserved.');
-    const calls = state.predictions;
+    const predictions = state.predictions;
     if (
-      calls !== undefined &&
+      predictions !== undefined &&
       !(
-        calls &&
-        typeof calls === 'object' &&
-        Object.values(calls).every((kind) => KINDS.includes(kind))
+        predictions &&
+        typeof predictions === 'object' &&
+        Object.values(predictions).every((kind) => KINDS.includes(kind))
       )
     )
       throw new TypeError('Invalid predictions.');
@@ -115,30 +115,61 @@
     );
   // A story with a finding shows no color until the player has predicted it.
   const storyKey = (bug) => bug.component + '-' + bug.kind;
-  const unjudged = (bug, state) =>
+  const unpredicted = (bug, state) =>
     !!state.predictions &&
     !!storyOf(bug, state)?.finding &&
     !state.predictions[storyKey(bug)];
-  function awaitsPrediction(bug, state) {
-    assertState(state);
-    return unjudged(bug, state);
-  }
+  // While a study has findings left to predict, anything that would give an
+  // answer away is withheld.
+  const withheld = (state) => state.bugs.some((b) => unpredicted(b, state));
+  // Where a bug stands. The heading titles its group in the round review, the
+  // status names it in the bug's details, and an action, where given,
+  // replaces the story's.
+  const STATUSES = freeze([
+    {
+      id: 'unpredicted',
+      heading: 'Not yet predicted',
+      status: 'Not yet predicted',
+      action: 'Predict whether it will clear or stay',
+    },
+    {
+      id: 'repairable',
+      heading: 'Still repairable',
+      status: 'Available repair',
+    },
+    {
+      id: 'persistent',
+      heading: 'Unresolved with these tools',
+      status: 'Unresolved with these tools',
+    },
+    {
+      id: 'repaired',
+      heading: 'Repaired this round',
+      status: 'Cleared in this example',
+      action: 'Resolved within this example',
+    },
+  ]);
+  const statusOf = (bug, state) =>
+    unpredicted(bug, state)
+      ? 'unpredicted'
+      : bug.cleared
+        ? 'repaired'
+        : bug.kind === 'clearable'
+          ? 'repairable'
+          : 'persistent';
   function getBugText(bug, state) {
     if (state) assertState(state);
     if (!bug || !componentIds.includes(bug.component))
       throw new RangeError('Unknown bug component.');
-    if (state && unjudged(bug, state))
-      return freeze({
-        title: 'Not yet judged',
-        subtitle: 'Will it clear, or will it stay?',
-      });
-    // A story with its own subtitle replaces the component's caption.
-    const story = state && storyOf(bug, state);
-    if (story?.subtitle)
-      return freeze({ title: story.title, subtitle: story.subtitle });
-    const { title, subtitle } = COMPONENTS.find((c) => c.id === bug.component)
-      .captions[bug.kind === 'clearable' ? 'clearable' : 'persistent'];
-    return freeze({ title, subtitle });
+    if (state && unpredicted(bug, state))
+      return 'Will it clear, or will it stay?';
+    // A story with its own caption replaces the component's.
+    return (
+      (state && storyOf(bug, state)?.caption) ||
+      COMPONENTS.find((c) => c.id === bug.component).captions[
+        bug.kind === 'clearable' ? 'clearable' : 'persistent'
+      ]
+    );
   }
   function getBugDetails(bug, state) {
     assertState(state);
@@ -155,31 +186,21 @@
     const detail = storyOf(current, state);
     if (!detail)
       throw new RangeError('No story exists for this bug in this study.');
-    // Until the call is made, the finding stands in for the story.
-    const waiting = unjudged(current, state);
-    const reason = waiting
-      ? detail.finding
-      : (repairPending(state, current.component) &&
-          detail.reasonBeforeRepair) ||
-        detail.reason;
+    // Until the prediction is made, the finding stands in for the story.
+    const standing = STATUSES.find((s) => s.id === statusOf(current, state));
+    const reason =
+      standing.id === 'unpredicted'
+        ? detail.finding
+        : (repairPending(state, current.component) &&
+            detail.reasonBeforeRepair) ||
+          detail.reason;
     return freeze({
       component: c.id,
       label: c.label,
       score: scores(state)[c.id],
-      title: waiting ? detail.finding : detail.title,
       reason,
-      action: waiting
-        ? 'Predict whether it will clear or stay'
-        : current.cleared
-          ? 'Resolved within this example'
-          : detail.action,
-      status: waiting
-        ? 'Not yet judged'
-        : current.cleared
-          ? 'Cleared in this example'
-          : current.kind === 'clearable'
-            ? 'Available repair'
-            : 'Unresolved with these tools',
+      action: standing.action || detail.action,
+      status: standing.status,
       sizeNote:
         'Size follows this component’s concern level; each bug is one Bleile point.',
     });
@@ -196,37 +217,34 @@
   );
   const POINTS_NOTE =
     'Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
-  const DEBRIEF_STATUSES = freeze([
-    { id: 'unjudged', heading: 'Not yet judged' },
-    { id: 'repairable', heading: 'Still repairable' },
-    { id: 'persistent', heading: 'Unresolved with these tools' },
-    { id: 'repaired', heading: 'Repaired this round' },
-  ]);
   const points = (n) => n + ' Bleile point' + (n === 1 ? '' : 's');
-  const statusOf = (bug, state) =>
-    unjudged(bug, state)
-      ? 'unjudged'
-      : bug.cleared
-        ? 'repaired'
-        : bug.kind === 'clearable'
-          ? 'repairable'
-          : 'persistent';
-  const storiesOf = (source) =>
-    Object.entries(source.concerns).flatMap(([component, stories]) =>
-      Object.entries(stories).map(([kind, story]) => ({
-        key: component + '-' + kind,
-        kind,
-        story,
-      })),
+  // How many stories ask for a prediction, how many the player has made and
+  // how many were right.
+  function predictionTally(source, predictions) {
+    const stories = Object.entries(source.concerns).flatMap(
+      ([component, kinds]) =>
+        Object.entries(kinds).map(([kind, story]) => ({
+          guess: predictions[storyKey({ component, kind })],
+          kind,
+          story,
+        })),
     );
-  // The debrief is read from the bugs as they are now: their component, kind
-  // and cleared flag. Bugs that tell the same story share one row.
+    const guessed = stories.filter((s) => s.guess);
+    return {
+      total: stories.filter((s) => s.story.finding).length,
+      made: guessed.length,
+      correct: guessed.filter((s) => s.guess === s.kind).length,
+    };
+  }
+  // The debrief is read from the bugs as they are now (component, kind and
+  // cleared flag) and from the predictions made. Bugs that tell the same story
+  // share one row.
   function debrief(state) {
     assertState(state);
     const source = config(state.scenario),
       rows = new Map();
     const tally = () => ({
-      ...(state.predictions && { unjudged: 0 }),
+      ...(state.predictions && { unpredicted: 0 }),
       repairable: 0,
       repaired: 0,
       persistent: 0,
@@ -250,10 +268,13 @@
           status,
           points: 0,
           found: 0,
+          // Headed by the repair made, the finding to predict, or the component.
           title:
             status === 'repaired'
-              ? source.concerns[bug.component].clearable.action
-              : detail.title,
+              ? storyOf(bug, state).action
+              : status === 'unpredicted'
+                ? detail.reason
+                : c.label,
           reason: detail.reason,
           action: detail.action,
           matters: c.definition,
@@ -266,11 +287,23 @@
       row.points++;
       if (bug.seen) row.found++;
     }
+    // Bugs come blue first within a component, so within a component the
+    // unpredicted rows are put in order of their wording: position must not
+    // give the color away.
+    const place = (r) => componentIds.indexOf(r.component);
     const list = [...rows.values()],
-      complete = counts.repairable === 0 && !counts.unjudged;
-    const made = storiesOf(source).filter((s) => state.predictions?.[s.key]);
-    const summary = counts.unjudged
-      ? points(counts.unjudged) + ' still await your prediction.'
+      rowsOf = (status) => {
+        const found = list.filter((r) => r.status === status);
+        return status === 'unpredicted'
+          ? found.sort(
+              (a, b) =>
+                place(a) - place(b) || a.title.localeCompare(b.title, 'en'),
+            )
+          : found;
+      },
+      complete = counts.repairable === 0 && !counts.unpredicted;
+    const summary = counts.unpredicted
+      ? points(counts.unpredicted) + ' not yet predicted.'
       : !complete
         ? (counts.repaired
             ? 'You have repaired ' + points(counts.repaired) + ' so far. '
@@ -282,25 +315,23 @@
           ' unresolved.';
     return freeze({
       scenario: state.scenario,
-      study: { title: source.title, subtitle: source.subtitle },
+      study: { title: source.title },
       verdict: verdict(state),
-      remaining: (counts.unjudged || 0) + counts.repairable + counts.persistent,
+      remaining: total(state),
       counts,
       complete,
       summary,
       pointsNote: POINTS_NOTE,
       ...(state.predictions && {
-        predictions: {
-          total: storiesOf(source).filter((s) => s.story.finding).length,
-          made: made.length,
-          correct: made.filter((s) => state.predictions[s.key] === s.kind)
-            .length,
-        },
+        predictions: predictionTally(source, state.predictions),
       }),
-      groups: DEBRIEF_STATUSES.filter((s) => s.id in counts).map((s) => ({
-        ...s,
+      groups: STATUSES.filter(
+        (s) => s.id !== 'unpredicted' || counts.unpredicted,
+      ).map((s) => ({
+        id: s.id,
+        heading: s.heading,
         points: counts[s.id],
-        rows: list.filter((r) => r.status === s.id),
+        rows: rowsOf(s.id),
       })),
     });
   }
@@ -309,12 +340,14 @@
     assertState(state);
     const bug = state.bugs.find((b) => b.id === id);
     if (!bug) throw new RangeError('Unknown bug: ' + id);
-    const waiting = unjudged(bug, state);
     if (
       (kind === 'reveal' && bug.seen) ||
       (kind === 'clear' &&
-        (bug.cleared || !bug.seen || bug.kind !== 'clearable' || waiting)) ||
-      (kind === 'predict' && (!bug.seen || !waiting))
+        (bug.cleared ||
+          !bug.seen ||
+          bug.kind !== 'clearable' ||
+          unpredicted(bug, state))) ||
+      (kind === 'predict' && (!bug.seen || !unpredicted(bug, state)))
     )
       return freeze({ state, event: null });
     const before = total(state),
@@ -327,10 +360,7 @@
       kind === 'predict'
         ? { ...state.predictions, [storyKey(bug)]: guess }
         : state.predictions;
-    const text = getBugText(
-      bug,
-      predictions ? { ...state, predictions } : state,
-    );
+    const caption = getBugText(bug, { ...state, predictions });
     const event = {
       kind,
       bugId: id,
@@ -338,7 +368,7 @@
       delta: kind === 'clear' ? -1 : 0,
       before,
       after: before - (kind === 'clear' ? 1 : 0),
-      ...text,
+      caption,
       ...(kind === 'predict' && { guess, correct: guess === bug.kind }),
     };
     const next = {
@@ -351,7 +381,7 @@
   }
   const reveal = (state, id) => transition(state, id, 'reveal');
   const clear = (state, id) => transition(state, id, 'clear');
-  // One call settles every bug of that story, and it cannot be changed.
+  // One prediction settles every bug of that story, and it cannot be changed.
   function predict(state, id, guess) {
     if (!KINDS.includes(guess))
       throw new RangeError('Unknown prediction: ' + guess);
@@ -359,10 +389,10 @@
   }
   function verdict(state) {
     assertState(state);
-    // The verdict would give calls away, so it waits for them.
-    if (state.bugs.some((b) => unjudged(b, state)))
+    // The verdict would give predictions away, so it waits for them.
+    if (withheld(state))
       return freeze({
-        heading: 'Your calls come first',
+        heading: 'Predictions come first',
         subtitle: 'Predict each concern to see what this study can repair.',
       });
     const { heading, subtitle } = config(state.scenario).verdicts.find(
@@ -381,7 +411,8 @@
     reveal,
     clear,
     predict,
-    awaitsPrediction,
+    unpredicted,
+    withheld,
     verdict,
     getBugText,
     getBugDetails,

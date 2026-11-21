@@ -26,9 +26,9 @@
             <div id="hotspots" aria-label="Study regions"></div>
             <div class="hud upper">
               <div id="world-heading">
-                <p class="eyebrow" id="scene-number">HOUSE 02 / 03</p>
-                <h1 id="scene-title">The records</h1>
-                <p class="subtitle" id="scene-subtitle">A promising comparison. Important gaps.</p>
+                <p class="eyebrow" id="scene-number"></p>
+                <h1 id="scene-title"></h1>
+                <p class="subtitle" id="scene-subtitle"></p>
               </div>
               <div class="scoreboard">
                 <div><strong id="score">24</strong><span>Bleile points<br>remaining</span></div>
@@ -79,9 +79,8 @@
         <section class="houses" aria-label="Choose a study scenario" id="houses"></section>
         <div class="verdict">
           <div>
-            <span class="eyebrow">THE STUDY</span>
-            <h2 id="verdict-title">Confounding obscures the comparison.</h2>
-            <p id="verdict-subtitle">Recovering information cannot create missing comparisons.</p>
+            <h2 id="verdict-title"></h2>
+            <p id="verdict-subtitle"></p>
           </div>
           <button id="profile-open" class="profile-button" aria-haspopup="dialog">Review this round <span aria-hidden="true">↗</span></button>
         </div>
@@ -93,11 +92,9 @@
     </div>
     <dialog id="guide" aria-labelledby="guide-title">
       <div class="dialog-head">
-        <span class="eyebrow">FIELD GUIDE</span>
+        <h2 id="guide-title">Field guide</h2>
         <button data-close="guide" aria-label="Close field guide">Close ×</button>
       </div>
-      <h2 id="guide-title">Bring it to light.</h2>
-      <p class="lead">Three studies. What can the light reveal?</p>
       <p>Move the spotlight to investigate. The corner lamp represents existing knowledge: it lights a small patch inside the study, leaving other concerns hidden. It removes no Bleile points. A targeted spotlight and a specified repair are needed to clear blue.</p>
       <div class="type-guide">
         <div>
@@ -127,7 +124,7 @@
       <p class="lead" id="profile-subtitle"></p>
       <p id="debrief-verdict"></p>
       <p id="debrief-summary"></p>
-      <p id="debrief-calls" hidden></p>
+      <p id="debrief-predictions" hidden></p>
       <p id="debrief-note" class="debrief-note"></p>
       <div id="debrief-groups"></div>
       <details class="debrief-profile">
@@ -135,37 +132,35 @@
         <div id="profile-bars"></div>
       </details>
     </dialog>
-    <dialog id="predict" aria-labelledby="predict-title">
+    <dialog id="predict" aria-labelledby="predict-title" aria-describedby="predict-finding">
       <div class="dialog-head">
-        <span class="eyebrow">YOUR CALL</span>
+        <h2 id="predict-title" tabindex="-1"></h2>
         <button data-close="predict" aria-label="Close this prediction">Close ×</button>
       </div>
-      <h2 id="predict-title" tabindex="-1"></h2>
       <p class="lead" id="predict-finding"></p>
       <div id="predict-ask">
-        <p>Will this one clear, or will it stay? Blue means the information or checks available in this study can address it. Coral means they cannot.</p>
-        <div class="predict-choices">
+        <p>Can the information or checks available in this study address it?</p>
+        <div class="dialog-actions">
           <button data-predict="clearable"><i class="cyan"></i>Blue · it clears</button>
           <button data-predict="persistent"><i class="coral"></i>Coral · it stays</button>
         </div>
       </div>
-      <div id="predict-result" aria-live="polite" hidden>
+      <div id="predict-result" hidden>
         <p id="predict-outcome"></p>
         <p id="predict-reason"></p>
         <p id="predict-action"></p>
-        <div class="predict-choices">
-          <button id="predict-continue" data-close="predict">Continue</button>
+        <div class="dialog-actions">
+          <button id="predict-continue" data-close="predict" aria-describedby="predict-outcome predict-reason predict-action">Continue</button>
         </div>
       </div>
     </dialog>
     <dialog id="notes" aria-labelledby="notes-title">
       <div class="dialog-head">
-        <span class="eyebrow">ABOUT THE SCORE</span>
+        <h2 id="notes-title">About the score</h2>
         <button data-close="notes" aria-label="Close score explanation">Close ×</button>
       </div>
-      <h2 id="notes-title">An illustrative tally.</h2>
       <p>Each bug is one stipulated concern. Its size follows the remaining 0–10 concern score for its component. Hover to see the study-specific reason. The total includes bugs still hidden in the dark. Revealing one changes what you have found, not the study’s condition.</p>
-      <p>The observational example starts at 24. Recovering pretreatment information clears three confounding Bleile points, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p>
+      <p id="notes-example">The observational example starts at 24. Recovering pretreatment information clears three confounding Bleile points, measurement validation clears one, and a specified reassuring sensitivity assessment clears one. The total reaches 19. Positivity stays at 4. The available repairs cannot supply the missing comparison.</p>
       <p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p>
       <p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p>
       <p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p>
