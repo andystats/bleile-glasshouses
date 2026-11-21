@@ -20,9 +20,12 @@ Use Node.js 20 or later. Edit the files in `src/`, which are the source of truth
 
 ```sh
 npm ci
+npm run format
 npm test
 npm run build
 ```
+
+`npm run format` applies Prettier to the scripts, styles and tests. `src/index.html` is formatted by hand, because whitespace between inline elements is visible on the page. GitHub Actions runs the format check, the tests and the build on every pull request and on `main`, and fails when the committed `index.html` does not match `src/`.
 
 The build preserves the source and writes identical `index.html` and `Bleile-in-the-Light.html` files. Three.js 0.187.0 is bundled locally; its license is embedded in the HTML and included in `THIRD_PARTY_LICENSES.txt`.
 

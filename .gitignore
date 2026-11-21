@@ -3,6 +3,11 @@
 !/.gitignore
 !/.gitattributes
 !/.nojekyll
+!/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/ci.yml
 !/README.md
 !/THIRD_PARTY_LICENSES.txt
 !/index.html

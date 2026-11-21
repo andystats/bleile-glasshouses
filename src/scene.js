@@ -151,7 +151,7 @@
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.15;
       this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = T.PCFSoftShadowMap;
+      this.renderer.shadowMap.type = T.PCFShadowMap;
       this.world = new T.Scene();
       this.world.background = new T.Color('#07121b');
       this.world.fog = new T.FogExp2('#07121b', 0.014);
