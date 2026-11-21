@@ -115,6 +115,9 @@
         <dl id="glossary"></dl>
       </details>
       <p class="dialog-note">The randomized example is deliberately well run. Randomization alone does not resolve every study concern.</p>
+      <div class="dialog-actions">
+        <button id="intro-open">Replay the intro</button>
+      </div>
     </dialog>
     <dialog id="profile" aria-labelledby="profile-title">
       <div class="dialog-head">
@@ -164,6 +167,45 @@
       <p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p>
       <p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p>
       <p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p>
+    </dialog>
+    <dialog id="welcome" aria-labelledby="welcome-title">
+      <div class="welcome-stage" aria-live="polite">
+        <section class="welcome-panel welcome-cover">
+          <div class="welcome-mark" aria-hidden="true">✺</div>
+          <h2 id="welcome-title">Bleile Glasshouses</h2>
+          <p class="lead">Each glasshouse is a study. Take a light inside and find what could spoil its causal claim.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art welcome-dark" aria-hidden="true"><span class="specimen">✳</span><span class="specimen lit">✳</span><span class="specimen">✳</span></div>
+          <p class="lead">A study claims that a treatment caused an outcome.</p>
+          <p>Every bug in its glasshouse is one reason to doubt that claim, such as a confounder nobody measured or patients who never had a real alternative. One bug is one Bleile point. Most of them start in the dark.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art" aria-hidden="true">
+            <figure><span class="specimen cyan">✳</span><figcaption>Blue · hold to clear</figcaption></figure>
+            <figure><span class="specimen coral">✳</span><figcaption>Coral · stays</figcaption></figure>
+          </div>
+          <p class="lead">Your light is investigation.</p>
+          <p>Sweep it through the glasshouse and the bugs show themselves. Finding one never makes the study worse.</p>
+          <p>A blue bug can be cleared: this study has the information or the check that repairs it. A coral bug stays. Nothing available in this study removes it.</p>
+          <p id="welcome-predict" hidden>With predictions on, each bug in the records house stays pale until you say which of the two it will be.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art" aria-hidden="true"><ol id="welcome-steps"></ol><span class="welcome-arrow">→</span><span class="welcome-verdict">Verdict</span></div>
+          <p class="lead">What remains decides the verdict.</p>
+          <p>Each bug belongs to one step of the causal roadmap. Clearing one step does nothing for another: measuring more confounders cannot supply a comparison that was never there.</p>
+          <p>When every available repair is done, the bugs still standing say how far this study can go in attributing the outcome to the treatment.</p>
+        </section>
+      </div>
+      <div class="welcome-nav">
+        <div class="welcome-pips" id="welcome-pips" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="dialog-actions">
+          <button id="welcome-back" hidden>Back</button>
+          <button id="welcome-next" autofocus><span id="welcome-next-label">Start</span> <kbd>ENTER</kbd></button>
+        </div>
+        <button id="welcome-skip" class="welcome-quiet" data-close="welcome" hidden>Skip intro</button>
+        <button id="welcome-how" class="welcome-quiet" hidden>How to play</button>
+      </div>
     </dialog>
     <div id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <noscript>This game needs JavaScript. Download this single HTML file and open it in a browser.</noscript>

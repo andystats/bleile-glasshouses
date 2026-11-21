@@ -21,6 +21,9 @@
     toastTimer,
     hintTimer,
     cycle = 0,
+    panel = 0,
+    introSeen = false,
+    lightBeforeWelcome = true,
     renderQueued = false;
   // A bug whose story is not yet predicted shows no color.
   const kindOf = (bug) =>
@@ -66,6 +69,9 @@
     row.dataset.component = c.id;
     row.innerHTML = `<div><span>${c.short}</span><b></b></div><div class="profile-track"><span class="profile-fill"></span></div>`;
     $('profile-bars').append(row);
+    const step = document.createElement('li');
+    step.textContent = c.short;
+    $('welcome-steps').append(step);
   }
   const scene = new BleileScene($('world'), {
     onReveal: (id) => transition('reveal', id),
@@ -683,11 +689,79 @@
       )
         dialog.close();
     });
-  if (predict)
+  // The welcome screen is a title followed by one intro panel each for the
+  // bugs, the light and the verdict. A returning player starts without them.
+  const INTRO_SEEN = 'bleile-intro-seen';
+  const panels = [...document.querySelectorAll('.welcome-panel')];
+  try {
+    introSeen = localStorage.getItem(INTRO_SEEN) === '1';
+  } catch {
+    // Storage can be blocked. The intro then runs on every visit.
+  }
+  function showPanel(index) {
+    panel = index;
+    const cover = panel === 0,
+      last = panel === panels.length - 1;
+    panels.forEach((p, i) => (p.hidden = i !== panel));
+    [...$('welcome-pips').children].forEach((pip, i) =>
+      pip.classList.toggle('on', i === panel - 1),
+    );
+    $('welcome').dataset.panel = panel;
+    $('welcome-back').hidden = cover;
+    $('welcome-skip').hidden = cover || last;
+    $('welcome-how').hidden = !cover || !introSeen;
+    $('welcome-next-label').textContent = last
+      ? 'Enter the glasshouse'
+      : cover
+        ? 'Start'
+        : 'Next';
+    // Hiding the focused button drops the focus, so the main button takes it.
+    if (!$('welcome').contains(document.activeElement))
+      $('welcome-next').focus();
+  }
+  // The glasshouse stays dark behind the welcome screen, so nothing is found
+  // before the player enters.
+  function openWelcome(index) {
+    lightBeforeWelcome = light;
+    setLight(false);
+    showPanel(index);
+    $('welcome').showModal();
+  }
+  $('welcome-next').addEventListener('click', () => {
+    if (panel === panels.length - 1 || (panel === 0 && introSeen))
+      $('welcome').close();
+    else showPanel(panel + 1);
+  });
+  $('welcome-back').addEventListener('click', () => showPanel(panel - 1));
+  $('welcome-how').addEventListener('click', () => showPanel(1));
+  $('welcome').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' && panel < panels.length - 1)
+      showPanel(panel + 1);
+    if (e.key === 'ArrowLeft' && panel > 0) showPanel(panel - 1);
+  });
+  $('welcome').addEventListener('close', () => {
+    introSeen = true;
+    try {
+      localStorage.setItem(INTRO_SEEN, '1');
+    } catch {
+      // Without storage the next visit shows the intro again.
+    }
+    setLight(lightBeforeWelcome);
+    // The opening hint starts its clock once the glasshouse is in view.
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(dismissHint, 6000);
+  });
+  $('intro-open').addEventListener('click', () => {
+    $('guide').close();
+    openWelcome(1);
+  });
+  if (predict) {
     $('beam-instruction').textContent =
       'Inspect a bug and predict its color. Then hold on blue to clear.';
+    $('welcome-predict').hidden = false;
+  }
   render();
-  hintTimer = setTimeout(dismissHint, 6000);
+  openWelcome(0);
   window.BleileApp = {
     getState: () => state,
     getDebrief: () => G.debrief(state),

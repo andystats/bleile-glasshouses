@@ -688,7 +688,8 @@ dialog::backdrop {
   align-items: center;
   margin-bottom: 12px;
 }
-.dialog-head button {
+.dialog-head button,
+.welcome-quiet {
   font-size: 11px;
   color: var(--muted);
   padding: 6px;
@@ -808,6 +809,193 @@ dd {
 }
 #predict-action {
   color: var(--text);
+}
+
+/* The welcome screen opens the game: a title, then three intro panels. */
+#welcome {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+}
+#welcome[open] {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  gap: 24px;
+}
+#welcome::backdrop {
+  background: radial-gradient(circle at 50% 40%, #0a181dc9, #030a0ff7 72%);
+  backdrop-filter: blur(4px);
+}
+.welcome-stage {
+  align-self: center;
+  max-width: 600px;
+}
+.welcome-panel {
+  animation: welcome-in 0.5s ease-out;
+}
+.welcome-panel p {
+  font-size: 14px;
+}
+.welcome-panel .lead {
+  font:
+    23px/1.4 Georgia,
+    serif;
+  color: var(--text);
+}
+.welcome-mark {
+  font-size: clamp(46px, 8vw, 76px);
+  line-height: 1;
+  color: var(--gold);
+  filter: drop-shadow(0 0 22px #e8c68d88);
+  animation: welcome-glow 3.4s ease-in-out infinite alternate;
+}
+#welcome h2 {
+  font-size: clamp(44px, 10.5vw, 100px);
+  line-height: 1.05;
+  margin-top: 12px;
+  text-shadow: 0 0 70px #e8c68d44;
+}
+.welcome-cover .lead {
+  margin-top: 24px;
+}
+.welcome-art {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px 38px;
+  margin-bottom: 30px;
+}
+.welcome-art .specimen {
+  margin: 0;
+  font-size: 56px;
+  line-height: 1;
+}
+/* One bug caught in the light, two still out of sight. */
+.welcome-dark {
+  background: radial-gradient(
+    ellipse 84px 74px at 50% 50%,
+    #e8c68d38,
+    transparent 72%
+  );
+}
+.welcome-dark .specimen {
+  color: #2b3d40;
+  filter: none;
+}
+.welcome-dark .lit {
+  color: var(--pale);
+  filter: drop-shadow(0 0 14px currentColor);
+}
+.welcome-art figure {
+  margin: 0;
+}
+.welcome-art figcaption,
+#welcome-steps li,
+.welcome-verdict {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.welcome-art figcaption {
+  margin-top: 10px;
+}
+.welcome-art .cyan {
+  animation: welcome-clear 3s ease-in infinite;
+}
+#welcome-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 430px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#welcome-steps li,
+.welcome-verdict {
+  padding: 5px 10px;
+  border: 1px solid #b9d6ca40;
+  border-radius: 3px;
+}
+.welcome-arrow,
+.welcome-verdict {
+  color: var(--gold);
+}
+.welcome-verdict {
+  border-color: var(--gold);
+}
+.welcome-nav {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+.welcome-nav .dialog-actions {
+  justify-content: center;
+  margin-top: 0;
+}
+#welcome-next {
+  border-color: var(--gold);
+  padding-inline: 28px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#welcome[data-panel='0'] #welcome-next {
+  animation: welcome-pulse 1.8s ease-in-out infinite;
+}
+.welcome-pips {
+  display: flex;
+  gap: 8px;
+}
+.welcome-pips i {
+  width: 22px;
+  height: 2px;
+  background: #e8c68d33;
+}
+.welcome-pips i.on {
+  background: var(--gold);
+}
+#welcome[data-panel='0'] .welcome-pips {
+  visibility: hidden;
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes welcome-glow {
+  to {
+    filter: drop-shadow(0 0 44px #e8c68de0);
+  }
+}
+@keyframes welcome-clear {
+  0%,
+  55% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+  76% {
+    transform: scale(0.6);
+  }
+}
+@keyframes welcome-pulse {
+  50% {
+    box-shadow: 0 0 26px #e8c68d66;
+  }
 }
 
 /* Each concern and its lesson remain visible while the explanation is folded. */

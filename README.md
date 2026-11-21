@@ -6,6 +6,8 @@ Explore three fictional studies with a spotlight. Hover over a bug to see the co
 
 The tally of Bleile points is a teaching metaphor for discussing causal assumptions. **Review this round**, beside each verdict, lists what is still repairable, what you repaired and what persists, with links to the matching roadmap steps (the links need an internet connection). Confounding and positivity retain separate scores. Finding a hidden concern never worsens the study. The numbers are illustrative, not a validated index or an estimate of bias.
 
+The game opens on a title screen. A first visit continues through three intro panels: what a bug is, what the light and the two colors do, and how the remaining bugs give the verdict. Later visits start the game directly (the browser remembers that the intro has run). **How to play** on the title screen, or **Replay the intro** in the Field guide, shows the panels again. Their text is in `src/index.html`.
+
 The game is a companion to the [causal roadmap primer](https://ishuryak.github.io/causal-roadmap-primer/v2/) and [Susan's CAST story](https://ishuryak.github.io/cast_demo_website/tutorial/).
 
 ## Prediction prototype

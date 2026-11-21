@@ -696,7 +696,8 @@ dialog::backdrop {
   align-items: center;
   margin-bottom: 12px;
 }
-.dialog-head button {
+.dialog-head button,
+.welcome-quiet {
   font-size: 11px;
   color: var(--muted);
   padding: 6px;
@@ -816,6 +817,193 @@ dd {
 }
 #predict-action {
   color: var(--text);
+}
+
+/* The welcome screen opens the game: a title, then three intro panels. */
+#welcome {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+}
+#welcome[open] {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  gap: 24px;
+}
+#welcome::backdrop {
+  background: radial-gradient(circle at 50% 40%, #0a181dc9, #030a0ff7 72%);
+  backdrop-filter: blur(4px);
+}
+.welcome-stage {
+  align-self: center;
+  max-width: 600px;
+}
+.welcome-panel {
+  animation: welcome-in 0.5s ease-out;
+}
+.welcome-panel p {
+  font-size: 14px;
+}
+.welcome-panel .lead {
+  font:
+    23px/1.4 Georgia,
+    serif;
+  color: var(--text);
+}
+.welcome-mark {
+  font-size: clamp(46px, 8vw, 76px);
+  line-height: 1;
+  color: var(--gold);
+  filter: drop-shadow(0 0 22px #e8c68d88);
+  animation: welcome-glow 3.4s ease-in-out infinite alternate;
+}
+#welcome h2 {
+  font-size: clamp(44px, 10.5vw, 100px);
+  line-height: 1.05;
+  margin-top: 12px;
+  text-shadow: 0 0 70px #e8c68d44;
+}
+.welcome-cover .lead {
+  margin-top: 24px;
+}
+.welcome-art {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px 38px;
+  margin-bottom: 30px;
+}
+.welcome-art .specimen {
+  margin: 0;
+  font-size: 56px;
+  line-height: 1;
+}
+/* One bug caught in the light, two still out of sight. */
+.welcome-dark {
+  background: radial-gradient(
+    ellipse 84px 74px at 50% 50%,
+    #e8c68d38,
+    transparent 72%
+  );
+}
+.welcome-dark .specimen {
+  color: #2b3d40;
+  filter: none;
+}
+.welcome-dark .lit {
+  color: var(--pale);
+  filter: drop-shadow(0 0 14px currentColor);
+}
+.welcome-art figure {
+  margin: 0;
+}
+.welcome-art figcaption,
+#welcome-steps li,
+.welcome-verdict {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.welcome-art figcaption {
+  margin-top: 10px;
+}
+.welcome-art .cyan {
+  animation: welcome-clear 3s ease-in infinite;
+}
+#welcome-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 430px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#welcome-steps li,
+.welcome-verdict {
+  padding: 5px 10px;
+  border: 1px solid #b9d6ca40;
+  border-radius: 3px;
+}
+.welcome-arrow,
+.welcome-verdict {
+  color: var(--gold);
+}
+.welcome-verdict {
+  border-color: var(--gold);
+}
+.welcome-nav {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+.welcome-nav .dialog-actions {
+  justify-content: center;
+  margin-top: 0;
+}
+#welcome-next {
+  border-color: var(--gold);
+  padding-inline: 28px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#welcome[data-panel='0'] #welcome-next {
+  animation: welcome-pulse 1.8s ease-in-out infinite;
+}
+.welcome-pips {
+  display: flex;
+  gap: 8px;
+}
+.welcome-pips i {
+  width: 22px;
+  height: 2px;
+  background: #e8c68d33;
+}
+.welcome-pips i.on {
+  background: var(--gold);
+}
+#welcome[data-panel='0'] .welcome-pips {
+  visibility: hidden;
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes welcome-glow {
+  to {
+    filter: drop-shadow(0 0 44px #e8c68de0);
+  }
+}
+@keyframes welcome-clear {
+  0%,
+  55% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+  76% {
+    transform: scale(0.6);
+  }
+}
+@keyframes welcome-pulse {
+  50% {
+    box-shadow: 0 0 26px #e8c68d66;
+  }
 }
 
 /* Each concern and its lesson remain visible while the explanation is folded. */
@@ -1373,6 +1561,9 @@ dd {
         <dl id="glossary"></dl>
       </details>
       <p class="dialog-note">The randomized example is deliberately well run. Randomization alone does not resolve every study concern.</p>
+      <div class="dialog-actions">
+        <button id="intro-open">Replay the intro</button>
+      </div>
     </dialog>
     <dialog id="profile" aria-labelledby="profile-title">
       <div class="dialog-head">
@@ -1422,6 +1613,45 @@ dd {
       <p>The randomized, observational and poorly specified houses are fictional examples, not automatic scores for those study types. A zero would represent an idealized assessment, not guaranteed truth. The score is not measured bias, a probability, a validated index, or a universal ranking. No treatment effect is estimated.</p>
       <p>Some concerns require better data, stronger assumptions or a different question. A changed question needs its own assessment.</p>
       <p class="dialog-note">Continue with the <a href="https://ishuryak.github.io/causal-roadmap-primer/v2/" target="_blank" rel="noopener">causal roadmap primer</a> or <a href="https://ishuryak.github.io/cast_demo_website/tutorial/" target="_blank" rel="noopener">Susan’s CAST story</a>.</p>
+    </dialog>
+    <dialog id="welcome" aria-labelledby="welcome-title">
+      <div class="welcome-stage" aria-live="polite">
+        <section class="welcome-panel welcome-cover">
+          <div class="welcome-mark" aria-hidden="true">✺</div>
+          <h2 id="welcome-title">Bleile Glasshouses</h2>
+          <p class="lead">Each glasshouse is a study. Take a light inside and find what could spoil its causal claim.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art welcome-dark" aria-hidden="true"><span class="specimen">✳</span><span class="specimen lit">✳</span><span class="specimen">✳</span></div>
+          <p class="lead">A study claims that a treatment caused an outcome.</p>
+          <p>Every bug in its glasshouse is one reason to doubt that claim, such as a confounder nobody measured or patients who never had a real alternative. One bug is one Bleile point. Most of them start in the dark.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art" aria-hidden="true">
+            <figure><span class="specimen cyan">✳</span><figcaption>Blue · hold to clear</figcaption></figure>
+            <figure><span class="specimen coral">✳</span><figcaption>Coral · stays</figcaption></figure>
+          </div>
+          <p class="lead">Your light is investigation.</p>
+          <p>Sweep it through the glasshouse and the bugs show themselves. Finding one never makes the study worse.</p>
+          <p>A blue bug can be cleared: this study has the information or the check that repairs it. A coral bug stays. Nothing available in this study removes it.</p>
+          <p id="welcome-predict" hidden>With predictions on, each bug in the records house stays pale until you say which of the two it will be.</p>
+        </section>
+        <section class="welcome-panel" hidden>
+          <div class="welcome-art" aria-hidden="true"><ol id="welcome-steps"></ol><span class="welcome-arrow">→</span><span class="welcome-verdict">Verdict</span></div>
+          <p class="lead">What remains decides the verdict.</p>
+          <p>Each bug belongs to one step of the causal roadmap. Clearing one step does nothing for another: measuring more confounders cannot supply a comparison that was never there.</p>
+          <p>When every available repair is done, the bugs still standing say how far this study can go in attributing the outcome to the treatment.</p>
+        </section>
+      </div>
+      <div class="welcome-nav">
+        <div class="welcome-pips" id="welcome-pips" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="dialog-actions">
+          <button id="welcome-back" hidden>Back</button>
+          <button id="welcome-next" autofocus><span id="welcome-next-label">Start</span> <kbd>ENTER</kbd></button>
+        </div>
+        <button id="welcome-skip" class="welcome-quiet" data-close="welcome" hidden>Skip intro</button>
+        <button id="welcome-how" class="welcome-quiet" hidden>How to play</button>
+      </div>
     </dialog>
     <div id="announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <noscript>This game needs JavaScript. Download this single HTML file and open it in a browser.</noscript>
@@ -8304,6 +8534,9 @@ void main() {
     toastTimer,
     hintTimer,
     cycle = 0,
+    panel = 0,
+    introSeen = false,
+    lightBeforeWelcome = true,
     renderQueued = false;
   // A bug whose story is not yet predicted shows no color.
   const kindOf = (bug) =>
@@ -8349,6 +8582,9 @@ void main() {
     row.dataset.component = c.id;
     row.innerHTML = `<div><span>${c.short}</span><b></b></div><div class="profile-track"><span class="profile-fill"></span></div>`;
     $('profile-bars').append(row);
+    const step = document.createElement('li');
+    step.textContent = c.short;
+    $('welcome-steps').append(step);
   }
   const scene = new BleileScene($('world'), {
     onReveal: (id) => transition('reveal', id),
@@ -8966,11 +9202,79 @@ void main() {
       )
         dialog.close();
     });
-  if (predict)
+  // The welcome screen is a title followed by one intro panel each for the
+  // bugs, the light and the verdict. A returning player starts without them.
+  const INTRO_SEEN = 'bleile-intro-seen';
+  const panels = [...document.querySelectorAll('.welcome-panel')];
+  try {
+    introSeen = localStorage.getItem(INTRO_SEEN) === '1';
+  } catch {
+    // Storage can be blocked. The intro then runs on every visit.
+  }
+  function showPanel(index) {
+    panel = index;
+    const cover = panel === 0,
+      last = panel === panels.length - 1;
+    panels.forEach((p, i) => (p.hidden = i !== panel));
+    [...$('welcome-pips').children].forEach((pip, i) =>
+      pip.classList.toggle('on', i === panel - 1),
+    );
+    $('welcome').dataset.panel = panel;
+    $('welcome-back').hidden = cover;
+    $('welcome-skip').hidden = cover || last;
+    $('welcome-how').hidden = !cover || !introSeen;
+    $('welcome-next-label').textContent = last
+      ? 'Enter the glasshouse'
+      : cover
+        ? 'Start'
+        : 'Next';
+    // Hiding the focused button drops the focus, so the main button takes it.
+    if (!$('welcome').contains(document.activeElement))
+      $('welcome-next').focus();
+  }
+  // The glasshouse stays dark behind the welcome screen, so nothing is found
+  // before the player enters.
+  function openWelcome(index) {
+    lightBeforeWelcome = light;
+    setLight(false);
+    showPanel(index);
+    $('welcome').showModal();
+  }
+  $('welcome-next').addEventListener('click', () => {
+    if (panel === panels.length - 1 || (panel === 0 && introSeen))
+      $('welcome').close();
+    else showPanel(panel + 1);
+  });
+  $('welcome-back').addEventListener('click', () => showPanel(panel - 1));
+  $('welcome-how').addEventListener('click', () => showPanel(1));
+  $('welcome').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' && panel < panels.length - 1)
+      showPanel(panel + 1);
+    if (e.key === 'ArrowLeft' && panel > 0) showPanel(panel - 1);
+  });
+  $('welcome').addEventListener('close', () => {
+    introSeen = true;
+    try {
+      localStorage.setItem(INTRO_SEEN, '1');
+    } catch {
+      // Without storage the next visit shows the intro again.
+    }
+    setLight(lightBeforeWelcome);
+    // The opening hint starts its clock once the glasshouse is in view.
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(dismissHint, 6000);
+  });
+  $('intro-open').addEventListener('click', () => {
+    $('guide').close();
+    openWelcome(1);
+  });
+  if (predict) {
     $('beam-instruction').textContent =
       'Inspect a bug and predict its color. Then hold on blue to clear.';
+    $('welcome-predict').hidden = false;
+  }
   render();
-  hintTimer = setTimeout(dismissHint, 6000);
+  openWelcome(0);
   window.BleileApp = {
     getState: () => state,
     getDebrief: () => G.debrief(state),
