@@ -5,10 +5,18 @@
   "description": "A standalone light-and-shadow game about causal study assumptions.",
   "scripts": {
     "build": "node build.cjs",
+    "format": "prettier --write build.cjs \"src/**/*.{js,css}\" \"tests/**/*.cjs\"",
+    "format:check": "prettier --check build.cjs \"src/**/*.{js,css}\" \"tests/**/*.cjs\"",
     "test": "node --test tests/model.test.cjs tests/targeting.test.cjs"
   },
+  "prettier": {
+    "singleQuote": true
+  },
   "dependencies": {
-    "esbuild": "0.28.2",
     "three": "0.187.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "prettier": "3.10.1"
   }
 }
