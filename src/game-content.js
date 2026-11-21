@@ -204,6 +204,9 @@
   // fictional facts of these three worked examples.
   //   points: the number of bugs telling this story, one Bleile point each.
   //     A component's score is the sum over both colors, at most 10.
+  //   finding (optional): what the player reads before predicting the color,
+  //     in a round played with predictions. It states the concern without
+  //     saying whether it clears. A study has one for every story or for none.
   //   title, reason, action: the inspection card and the round review.
   //   subtitle (optional): with the title, replaces the component's caption.
   //   reasonBeforeRepair (optional, coral only): replaces the reason while a
@@ -285,26 +288,33 @@
         question: {
           persistent: {
             points: 1,
+            finding:
+              'For a small set of borderline patients, the records do not show whether they met the eligibility criteria.',
             title: 'A few eligibility cases need review',
             subtitle: 'The population and one-year contrast are specified.',
             reason:
-              'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',
+              'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. For a small set of borderline patients the records do not show whether the criteria were met. Reviewing the same records again cannot settle who belongs in the comparison.',
             action: 'Adjudicate the remaining eligibility cases',
           },
         },
         design: {
           persistent: {
             points: 1,
+            finding:
+              'For a few patients, the date of the treatment decision is missing or inconsistent in the records.',
             title: 'A few decision dates need review',
             subtitle: 'The study otherwise aligns time zero.',
             reason:
-              'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',
-            action: 'Review the remaining uncertain dates',
+              'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. For a few patients that date is missing or inconsistent in these records. The same records cannot establish when their follow-up should start.',
+            action:
+              'Establish the remaining decision dates from another source',
           },
         },
         confounding: {
           clearable: {
             points: 3,
+            finding:
+              'Performance status is absent from the analysis, although the pretreatment charts record it.',
             title: 'Pretreatment function can be recovered',
             reason:
               'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',
@@ -312,6 +322,8 @@
           },
           persistent: {
             points: 3,
+            finding:
+              'Some shared causes of treatment choice and survival were never recorded.',
             title: 'Other common causes are unrecorded',
             reason:
               'The recovered performance status does not capture every shared cause of treatment choice and survival. Other clinically relevant baseline differences remain unrecorded.',
@@ -323,6 +335,8 @@
         positivity: {
           persistent: {
             points: 4,
+            finding:
+              'A few subgroups appear under only one of the two treatments.',
             title: 'A few subgroups have no comparison',
             reason:
               'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',
@@ -332,16 +346,20 @@
         consistency: {
           persistent: {
             points: 1,
+            finding:
+              'A few patients had a change in dose or schedule that the treatment definitions do not address.',
             title: 'A few treatment versions need review',
             subtitle: 'The treatment strategies are mostly consistent.',
             reason:
-              'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',
-            action: 'Review the remaining treatment-version cases',
+              'The protocol defines Treatment X and usual care consistently across clinics. A few patients had a change in dose or schedule. Whether that still counts as the same strategy is a decision about the definition, and no record can make it.',
+            action: 'Decide which treatment versions each strategy includes',
           },
         },
         measurement: {
           clearable: {
             points: 1,
+            finding:
+              'One specified coding discrepancy is unchecked, and the source charts for it are on hand.',
             title: 'One validation check remains',
             reason:
               'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',
@@ -349,6 +367,8 @@
           },
           persistent: {
             points: 2,
+            finding:
+              'A small set of health and survival records has no source documentation.',
             title: 'A limited validation gap remains',
             reason:
               'Most health and survival records have been checked, but a small set lacks source documentation. Auditing the available charts does not validate those missing sources.',
@@ -358,6 +378,8 @@
         censoring: {
           persistent: {
             points: 2,
+            finding:
+              'A small group left follow-up before one year, and their outcomes are unknown.',
             title: 'Follow-up is nearly complete',
             reason:
               'One-year survival is known for most patients. A small group left follow-up, and the remaining records do not establish how their outcomes compare with those retained.',
@@ -367,6 +389,8 @@
         estimation: {
           persistent: {
             points: 2,
+            finding:
+              'Estimates in small subgroups shift with the modeling choices.',
             title: 'The main analysis has been checked',
             reason:
               'Basic fit and uncertainty checks are complete for the main comparison. Estimates in small subgroups remain sensitive to modeling choices.',
@@ -376,6 +400,8 @@
         sensitivity: {
           clearable: {
             points: 1,
+            finding:
+              'The prespecified bias scenarios have not been examined yet.',
             title: 'Specified bias scenarios are unchecked',
             reason:
               'The analysis has not yet examined its prespecified departures from the assumptions. In this example the checked range gives reassuring results.',
@@ -383,6 +409,8 @@
           },
           persistent: {
             points: 1,
+            finding:
+              'Bias larger than, or different from, the prespecified scenarios is outside the planned check.',
             title: 'Other departures remain untested',
             reason:
               'The reassuring sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
@@ -394,6 +422,8 @@
         transport: {
           persistent: {
             points: 2,
+            finding:
+              'These records come from selected clinics, and the result may be applied elsewhere.',
             title: 'Transfer beyond these clinics needs review',
             reason:
               'These records come from selected clinics with a defined study population. Applying the one-year comparison in other settings still needs evidence about relevant differences.',

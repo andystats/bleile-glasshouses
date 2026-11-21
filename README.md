@@ -8,6 +8,10 @@ The tally of Bleile points is a teaching metaphor for discussing causal assumpti
 
 The game is a companion to the [causal roadmap primer](https://ishuryak.github.io/causal-roadmap-primer/v2/) and [Susan's CAST story](https://ishuryak.github.io/cast_demo_website/tutorial/).
 
+## Prediction prototype
+
+Add `?predict` to the address to try predicting before the reveal, in the records house only. Each bug there stays pale until you inspect it, read a short neutral finding, and call it blue or coral. The study's reason then appears as feedback, and repairs work as before. **Review this round** lists the findings you have not judged yet without giving them away, and counts your calls. Without `?predict`, and in the other two houses, the game is unchanged. The findings are draft wording: each records story has a `finding` in `src/game-content.js`.
+
 ## Play or share offline
 
 Download `index.html` and open it in a modern browser with WebGL 2 enabled. All renderer code, geometry and materials are embedded in that one file. No account or runtime network connection is needed.

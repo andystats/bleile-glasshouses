@@ -14,6 +14,31 @@
     }
     return h >>> 0;
   };
+  // A bug's kind picks its look. A kind that is still withheld is drawn pale.
+  const LOOKS = {
+    clearable: {
+      body: 'cyan',
+      eye: 'cyanEye',
+      legs: '#6dcee2',
+      reticle: '#b1f2ff',
+      label: 'blue, one body target per press',
+    },
+    persistent: {
+      body: 'coral',
+      eye: 'coralEye',
+      legs: '#d57d81',
+      reticle: '#ffc0ac',
+      label: 'coral, reveal only',
+    },
+    unknown: {
+      body: 'pale',
+      eye: 'paleEye',
+      legs: '#cfc8b0',
+      reticle: '#f3ecd4',
+      label: 'not yet judged',
+    },
+  };
+  const lookOf = (kind) => LOOKS[kind] || LOOKS.persistent;
   class BleileScene {
     constructor(host, options = {}) {
       this.host = host;
@@ -206,6 +231,14 @@
           clearcoatRoughness: 0.15,
           envMapIntensity: 0.1,
         }),
+        pale: new T.MeshPhysicalMaterial({
+          color: '#9a9482',
+          roughness: 0.22,
+          metalness: 0.25,
+          clearcoat: 1,
+          clearcoatRoughness: 0.13,
+          envMapIntensity: 0.1,
+        }),
         cyanEye: new T.MeshStandardMaterial({
           color: '#a2ecf7',
           emissive: '#3b9db7',
@@ -219,6 +252,13 @@
           emissiveIntensity: 0.13,
           roughness: 0.18,
           metalness: 0.1,
+        }),
+        paleEye: new T.MeshStandardMaterial({
+          color: '#f3eedc',
+          emissive: '#8f8a70',
+          emissiveIntensity: 0.15,
+          roughness: 0.18,
+          metalness: 0.11,
         }),
         pupil: new T.MeshStandardMaterial({
           color: '#080e1b',
@@ -260,7 +300,15 @@
         }),
       };
       this.initLightMask();
-      for (const name of ['cyan', 'coral', 'cyanEye', 'coralEye', 'pupil'])
+      for (const name of [
+        'cyan',
+        'coral',
+        'pale',
+        'cyanEye',
+        'coralEye',
+        'paleEye',
+        'pupil',
+      ])
         this.maskBugMaterial(this.materials[name]);
       this.architecture = new T.Group();
       this.occluders = [];
@@ -771,18 +819,13 @@
         revealSent: !!bug.seen,
         clearSent: !!bug.cleared,
       };
-      n.body = new T.Mesh(
-        this.shared.body,
-        this.materials[bug.kind === 'clearable' ? 'cyan' : 'coral'],
-      );
+      const look = lookOf(bug.kind);
+      n.body = new T.Mesh(this.shared.body, this.materials[look.body]);
       n.body.castShadow = true;
       n.body.receiveShadow = true;
       n.body.userData.bugId = bug.id;
       group.add(n.body);
-      n.eye = new T.Mesh(
-        this.shared.eye,
-        this.materials[bug.kind === 'clearable' ? 'cyanEye' : 'coralEye'],
-      );
+      n.eye = new T.Mesh(this.shared.eye, this.materials[look.eye]);
       group.add(n.eye);
       n.pupil = new T.Mesh(this.shared.pupil, this.materials.pupil);
       group.add(n.pupil);
@@ -795,7 +838,7 @@
       n.legs = new T.LineSegments(
         geometry,
         new T.LineBasicMaterial({
-          color: bug.kind === 'clearable' ? '#6dcee2' : '#d57d81',
+          color: look.legs,
           transparent: false,
           opacity: 1,
           depthWrite: true,
@@ -905,17 +948,17 @@
           n.worldRadius * 0.09,
         );
         n.pupil.position.set(0, 0, n.worldRadius * 1.48);
-        n.body.material =
-          this.materials[bug.kind === 'clearable' ? 'cyan' : 'coral'];
-        n.eye.material =
-          this.materials[bug.kind === 'clearable' ? 'cyanEye' : 'coralEye'];
+        const look = lookOf(bug.kind);
+        n.body.material = this.materials[look.body];
+        n.eye.material = this.materials[look.eye];
+        n.legColor.set(look.legs);
         n.group.visible = !n.cleared && this.intersectsLight(n);
         if (n.button) {
           n.button.hidden = !!bug.cleared;
           n.button.setAttribute(
             'aria-label',
             bug.seen
-              ? `${bug.component}: ${bug.kind === 'clearable' ? 'blue, one body target per press' : 'coral, reveal only'}`
+              ? `${bug.component}: ${look.label}`
               : `Search glasshouse region ${index + 1}`,
           );
         }
@@ -1489,9 +1532,7 @@
       this.reticle.position.copy(n.group.position);
       this.reticle.quaternion.copy(n.group.quaternion);
       this.reticle.scale.setScalar(n.worldRadius * 1.45);
-      this.reticle.material.color.set(
-        n.kind === 'clearable' ? '#b1f2ff' : '#ffc0ac',
-      );
+      this.reticle.material.color.set(lookOf(n.kind).reticle);
       this.reticle.material.opacity = this.focus ? 1 : 0.6;
     }
     getDebug() {

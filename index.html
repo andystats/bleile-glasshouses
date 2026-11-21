@@ -15,6 +15,7 @@
   --gold: #e8c68d;
   --cyan: #7de6f3;
   --coral: #f3978c;
+  --pale: #e3dcc4;
   --line: #b9d6ca21;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
@@ -78,6 +79,9 @@ i.cyan {
 }
 i.coral {
   background: var(--coral);
+}
+i.pale {
+  background: var(--pale);
 }
 .sr-only {
   position: absolute;
@@ -310,6 +314,11 @@ i.coral {
   background: var(--coral);
   box-shadow: 0 0 15px #f3978c44;
 }
+.bug-mark[data-kind='unknown'] {
+  border: 0;
+  background: var(--pale);
+  box-shadow: 0 0 15px #e3dcc444;
+}
 .legend {
   display: flex;
   gap: 18px;
@@ -394,6 +403,9 @@ i.coral {
 }
 .inspect-card[data-kind='clearable'] .inspect-response > span {
   color: var(--cyan);
+}
+.inspect-card[data-kind='unknown'] .inspect-response > span {
+  color: var(--pale);
 }
 .inspect-response strong {
   display: block;
@@ -766,6 +778,54 @@ dd {
   line-height: 1.8;
 }
 
+/* The player calls a bug's color here before it is shown. */
+#predict {
+  max-width: 520px;
+}
+#predict-title {
+  outline: none;
+}
+.predict-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+.predict-choices button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8c68d55;
+  padding: 10px 20px;
+  border-radius: 3px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  background: #e8c68d0c;
+  min-height: 44px;
+}
+.predict-choices button:hover {
+  border-color: var(--gold);
+}
+.predict-choices i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.predict-choices i.coral {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+#predict-outcome {
+  font-size: 15px;
+  color: var(--coral);
+}
+#predict-result[data-kind='clearable'] #predict-outcome {
+  color: var(--cyan);
+}
+#predict-action {
+  color: var(--text);
+}
+
 /* Each concern and its lesson remain visible while the explanation is folded. */
 #profile {
   overflow-y: auto;
@@ -776,6 +836,7 @@ dd {
 }
 #profile .lead,
 #debrief-summary,
+#debrief-calls,
 #debrief-note {
   margin-block: 6px;
 }
@@ -795,6 +856,9 @@ dd {
   gap: 10px;
   margin: 0 0 4px;
   font-size: 14px;
+}
+.debrief-group[data-status='unjudged'] h3 {
+  color: var(--pale);
 }
 .debrief-group[data-status='repairable'] h3 {
   color: var(--cyan);
@@ -1255,6 +1319,7 @@ dd {
               <div class="legend" aria-label="Bug types">
                 <span><i class="cyan"></i>Blue · clear</span>
                 <span><i class="coral"></i>Coral · reveal</span>
+                <span id="legend-pale" hidden><i class="pale"></i>Pale · predict</span>
               </div>
             </div>
           </section>
@@ -1333,12 +1398,36 @@ dd {
       <p class="lead" id="profile-subtitle"></p>
       <p id="debrief-verdict"></p>
       <p id="debrief-summary"></p>
+      <p id="debrief-calls" hidden></p>
       <p id="debrief-note" class="debrief-note"></p>
       <div id="debrief-groups"></div>
       <details class="debrief-profile">
         <summary>Bleile points by component</summary>
         <div id="profile-bars"></div>
       </details>
+    </dialog>
+    <dialog id="predict" aria-labelledby="predict-title">
+      <div class="dialog-head">
+        <span class="eyebrow">YOUR CALL</span>
+        <button data-close="predict" aria-label="Close this prediction">Close ×</button>
+      </div>
+      <h2 id="predict-title" tabindex="-1"></h2>
+      <p class="lead" id="predict-finding"></p>
+      <div id="predict-ask">
+        <p>Will this one clear, or will it stay? Blue means the information or checks available in this study can address it. Coral means they cannot.</p>
+        <div class="predict-choices">
+          <button data-predict="clearable"><i class="cyan"></i>Blue · it clears</button>
+          <button data-predict="persistent"><i class="coral"></i>Coral · it stays</button>
+        </div>
+      </div>
+      <div id="predict-result" aria-live="polite" hidden>
+        <p id="predict-outcome"></p>
+        <p id="predict-reason"></p>
+        <p id="predict-action"></p>
+        <div class="predict-choices">
+          <button id="predict-continue" data-close="predict">Continue</button>
+        </div>
+      </div>
     </dialog>
     <dialog id="notes" aria-labelledby="notes-title">
       <div class="dialog-head">
@@ -5817,6 +5906,9 @@ void main() {
   // fictional facts of these three worked examples.
   //   points: the number of bugs telling this story, one Bleile point each.
   //     A component's score is the sum over both colors, at most 10.
+  //   finding (optional): what the player reads before predicting the color,
+  //     in a round played with predictions. It states the concern without
+  //     saying whether it clears. A study has one for every story or for none.
   //   title, reason, action: the inspection card and the round review.
   //   subtitle (optional): with the title, replaces the component's caption.
   //   reasonBeforeRepair (optional, coral only): replaces the reason while a
@@ -5898,26 +5990,33 @@ void main() {
         question: {
           persistent: {
             points: 1,
+            finding:
+              'For a small set of borderline patients, the records do not show whether they met the eligibility criteria.',
             title: 'A few eligibility cases need review',
             subtitle: 'The population and one-year contrast are specified.',
             reason:
-              'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. A small set of borderline eligibility cases still needs review.',
+              'The protocol specifies eligible patients, Treatment X versus usual care, and the difference in one-year survival. For a small set of borderline patients the records do not show whether the criteria were met. Reviewing the same records again cannot settle who belongs in the comparison.',
             action: 'Adjudicate the remaining eligibility cases',
           },
         },
         design: {
           persistent: {
             points: 1,
+            finding:
+              'For a few patients, the date of the treatment decision is missing or inconsistent in the records.',
             title: 'A few decision dates need review',
             subtitle: 'The study otherwise aligns time zero.',
             reason:
-              'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. A few uncertain decision dates still need adjudication.',
-            action: 'Review the remaining uncertain dates',
+              'Eligibility, treatment assignment and follow-up start at the recorded treatment decision for both strategies. For a few patients that date is missing or inconsistent in these records. The same records cannot establish when their follow-up should start.',
+            action:
+              'Establish the remaining decision dates from another source',
           },
         },
         confounding: {
           clearable: {
             points: 3,
+            finding:
+              'Performance status is absent from the analysis, although the pretreatment charts record it.',
             title: 'Pretreatment function can be recovered',
             reason:
               'Most baseline factors are recorded, but performance status is absent from the analysis and recoverable from pretreatment charts. In this example it helps explain both treatment choice and one-year survival.',
@@ -5925,6 +6024,8 @@ void main() {
           },
           persistent: {
             points: 3,
+            finding:
+              'Some shared causes of treatment choice and survival were never recorded.',
             title: 'Other common causes are unrecorded',
             reason:
               'The recovered performance status does not capture every shared cause of treatment choice and survival. Other clinically relevant baseline differences remain unrecorded.',
@@ -5936,6 +6037,8 @@ void main() {
         positivity: {
           persistent: {
             points: 4,
+            finding:
+              'A few subgroups appear under only one of the two treatments.',
             title: 'A few subgroups have no comparison',
             reason:
               'Most patients have both options represented, but a few subgroups appear under only one treatment in these records. Recovering performance status does not create the missing comparison.',
@@ -5945,16 +6048,20 @@ void main() {
         consistency: {
           persistent: {
             points: 1,
+            finding:
+              'A few patients had a change in dose or schedule that the treatment definitions do not address.',
             title: 'A few treatment versions need review',
             subtitle: 'The treatment strategies are mostly consistent.',
             reason:
-              'The protocol defines Treatment X and usual care consistently across clinics. A few changes in dose or schedule still need interpretation against those definitions.',
-            action: 'Review the remaining treatment-version cases',
+              'The protocol defines Treatment X and usual care consistently across clinics. A few patients had a change in dose or schedule. Whether that still counts as the same strategy is a decision about the definition, and no record can make it.',
+            action: 'Decide which treatment versions each strategy includes',
           },
         },
         measurement: {
           clearable: {
             points: 1,
+            finding:
+              'One specified coding discrepancy is unchecked, and the source charts for it are on hand.',
             title: 'One validation check remains',
             reason:
               'Most coding and timing checks are complete. Available source charts can resolve the remaining specified discrepancy and confirm pretreatment timing.',
@@ -5962,6 +6069,8 @@ void main() {
           },
           persistent: {
             points: 2,
+            finding:
+              'A small set of health and survival records has no source documentation.',
             title: 'A limited validation gap remains',
             reason:
               'Most health and survival records have been checked, but a small set lacks source documentation. Auditing the available charts does not validate those missing sources.',
@@ -5971,6 +6080,8 @@ void main() {
         censoring: {
           persistent: {
             points: 2,
+            finding:
+              'A small group left follow-up before one year, and their outcomes are unknown.',
             title: 'Follow-up is nearly complete',
             reason:
               'One-year survival is known for most patients. A small group left follow-up, and the remaining records do not establish how their outcomes compare with those retained.',
@@ -5980,6 +6091,8 @@ void main() {
         estimation: {
           persistent: {
             points: 2,
+            finding:
+              'Estimates in small subgroups shift with the modeling choices.',
             title: 'The main analysis has been checked',
             reason:
               'Basic fit and uncertainty checks are complete for the main comparison. Estimates in small subgroups remain sensitive to modeling choices.',
@@ -5989,6 +6102,8 @@ void main() {
         sensitivity: {
           clearable: {
             points: 1,
+            finding:
+              'The prespecified bias scenarios have not been examined yet.',
             title: 'Specified bias scenarios are unchecked',
             reason:
               'The analysis has not yet examined its prespecified departures from the assumptions. In this example the checked range gives reassuring results.',
@@ -5996,6 +6111,8 @@ void main() {
           },
           persistent: {
             points: 1,
+            finding:
+              'Bias larger than, or different from, the prespecified scenarios is outside the planned check.',
             title: 'Other departures remain untested',
             reason:
               'The reassuring sensitivity check covers only its specified scenarios. Larger or different unmeasured differences could still change the interpretation.',
@@ -6007,6 +6124,8 @@ void main() {
         transport: {
           persistent: {
             points: 2,
+            finding:
+              'These records come from selected clinics, and the result may be applied elsewhere.',
             title: 'Transfer beyond these clinics needs review',
             reason:
               'These records come from selected clinics with a defined study population. Applying the one-year comparison in other settings still needs evidence about relevant differences.',
@@ -6194,7 +6313,9 @@ void main() {
     if (!value) throw new RangeError('Unknown scenario: ' + id);
     return value;
   };
-  function initialState(scenario = 'rwd') {
+  const KINDS = ['clearable', 'persistent'];
+  // A round played with predictions records the player's call for each story.
+  function initialState(scenario = 'rwd', { predict = false } = {}) {
     const source = config(scenario),
       bugs = [];
     for (const c of COMPONENTS)
@@ -6206,7 +6327,12 @@ void main() {
           cleared: false,
           seen: false,
         });
-    return freeze({ scenario, bugs, history: [] });
+    return freeze({
+      scenario,
+      bugs,
+      history: [],
+      ...(predict && { predictions: {} }),
+    });
   }
   function assertState(state) {
     if (!state || !Array.isArray(state.bugs) || !Array.isArray(state.history))
@@ -6218,7 +6344,7 @@ void main() {
       if (
         !b ||
         !componentIds.includes(b.component) ||
-        !['clearable', 'persistent'].includes(b.kind) ||
+        !KINDS.includes(b.kind) ||
         typeof b.id !== 'string' ||
         ids.has(b.id) ||
         typeof b.cleared !== 'boolean' ||
@@ -6233,6 +6359,16 @@ void main() {
     for (const id of componentIds)
       if (counts[id] !== source.scores[id])
         throw new RangeError('The initial infestation must be preserved.');
+    const calls = state.predictions;
+    if (
+      calls !== undefined &&
+      !(
+        calls &&
+        typeof calls === 'object' &&
+        Object.values(calls).every((kind) => KINDS.includes(kind))
+      )
+    )
+      throw new TypeError('Invalid predictions.');
   }
   function total(state) {
     assertState(state);
@@ -6250,10 +6386,25 @@ void main() {
     state.bugs.some(
       (b) => b.component === component && b.kind === 'clearable' && !b.cleared,
     );
+  // A story with a finding shows no color until the player has predicted it.
+  const storyKey = (bug) => bug.component + '-' + bug.kind;
+  const unjudged = (bug, state) =>
+    !!state.predictions &&
+    !!storyOf(bug, state)?.finding &&
+    !state.predictions[storyKey(bug)];
+  function awaitsPrediction(bug, state) {
+    assertState(state);
+    return unjudged(bug, state);
+  }
   function getBugText(bug, state) {
     if (state) assertState(state);
     if (!bug || !componentIds.includes(bug.component))
       throw new RangeError('Unknown bug component.');
+    if (state && unjudged(bug, state))
+      return freeze({
+        title: 'Not yet judged',
+        subtitle: 'Will it clear, or will it stay?',
+      });
     // A story with its own subtitle replaces the component's caption.
     const story = state && storyOf(bug, state);
     if (story?.subtitle)
@@ -6277,21 +6428,31 @@ void main() {
     const detail = storyOf(current, state);
     if (!detail)
       throw new RangeError('No story exists for this bug in this study.');
-    const reason =
-      (repairPending(state, current.component) && detail.reasonBeforeRepair) ||
-      detail.reason;
+    // Until the call is made, the finding stands in for the story.
+    const waiting = unjudged(current, state);
+    const reason = waiting
+      ? detail.finding
+      : (repairPending(state, current.component) &&
+          detail.reasonBeforeRepair) ||
+        detail.reason;
     return freeze({
       component: c.id,
       label: c.label,
       score: scores(state)[c.id],
-      title: detail.title,
+      title: waiting ? detail.finding : detail.title,
       reason,
-      action: current.cleared ? 'Resolved within this example' : detail.action,
-      status: current.cleared
-        ? 'Cleared in this example'
-        : current.kind === 'clearable'
-          ? 'Available repair'
-          : 'Unresolved with these tools',
+      action: waiting
+        ? 'Predict whether it will clear or stay'
+        : current.cleared
+          ? 'Resolved within this example'
+          : detail.action,
+      status: waiting
+        ? 'Not yet judged'
+        : current.cleared
+          ? 'Cleared in this example'
+          : current.kind === 'clearable'
+            ? 'Available repair'
+            : 'Unresolved with these tools',
       sizeNote:
         'Size follows this component’s concern level; each bug is one Bleile point.',
     });
@@ -6309,33 +6470,48 @@ void main() {
   const POINTS_NOTE =
     'Bleile points are informal game tokens for study gaps and possible repairs. They do not measure bias or decide the verdict.';
   const DEBRIEF_STATUSES = freeze([
+    { id: 'unjudged', heading: 'Not yet judged' },
     { id: 'repairable', heading: 'Still repairable' },
     { id: 'persistent', heading: 'Unresolved with these tools' },
     { id: 'repaired', heading: 'Repaired this round' },
   ]);
   const points = (n) => n + ' Bleile point' + (n === 1 ? '' : 's');
-  const statusOf = (bug) =>
-    bug.cleared
-      ? 'repaired'
-      : bug.kind === 'clearable'
-        ? 'repairable'
-        : 'persistent';
+  const statusOf = (bug, state) =>
+    unjudged(bug, state)
+      ? 'unjudged'
+      : bug.cleared
+        ? 'repaired'
+        : bug.kind === 'clearable'
+          ? 'repairable'
+          : 'persistent';
+  const storiesOf = (source) =>
+    Object.entries(source.concerns).flatMap(([component, stories]) =>
+      Object.entries(stories).map(([kind, story]) => ({
+        key: component + '-' + kind,
+        kind,
+        story,
+      })),
+    );
   // The debrief is read from the bugs as they are now: their component, kind
   // and cleared flag. Bugs that tell the same story share one row.
   function debrief(state) {
     assertState(state);
     const source = config(state.scenario),
       rows = new Map();
-    const counts = { repairable: 0, repaired: 0, persistent: 0 };
+    const tally = () => ({
+      ...(state.predictions && { unjudged: 0 }),
+      repairable: 0,
+      repaired: 0,
+      persistent: 0,
+    });
+    const counts = tally();
     const perComponent = Object.fromEntries(
-      componentIds.map((id) => [
-        id,
-        { repairable: 0, repaired: 0, persistent: 0 },
-      ]),
+      componentIds.map((id) => [id, tally()]),
     );
     for (const bug of state.bugs) {
-      const status = statusOf(bug),
-        key = bug.component + '-' + status;
+      const status = statusOf(bug, state),
+        key = storyKey(bug) + '-' + status,
+        guess = state.predictions?.[storyKey(bug)];
       counts[status]++;
       perComponent[bug.component][status]++;
       if (!rows.has(key)) {
@@ -6356,6 +6532,7 @@ void main() {
           matters: c.definition,
           step: ROADMAP_STEPS[c.id],
           sameComponent: perComponent[c.id],
+          ...(guess && { guess, correct: guess === bug.kind }),
         });
       }
       const row = rows.get(key);
@@ -6363,26 +6540,37 @@ void main() {
       if (bug.seen) row.found++;
     }
     const list = [...rows.values()],
-      complete = counts.repairable === 0;
-    const summary = !complete
-      ? (counts.repaired
-          ? 'You have repaired ' + points(counts.repaired) + ' so far. '
-          : 'No repairs yet. ') +
-        points(counts.repairable) +
-        ' can still be repaired here.'
-      : 'Every available repair is done. These records still leave ' +
-        points(counts.persistent) +
-        ' unresolved.';
+      complete = counts.repairable === 0 && !counts.unjudged;
+    const made = storiesOf(source).filter((s) => state.predictions?.[s.key]);
+    const summary = counts.unjudged
+      ? points(counts.unjudged) + ' still await your prediction.'
+      : !complete
+        ? (counts.repaired
+            ? 'You have repaired ' + points(counts.repaired) + ' so far. '
+            : 'No repairs yet. ') +
+          points(counts.repairable) +
+          ' can still be repaired here.'
+        : 'Every available repair is done. These records still leave ' +
+          points(counts.persistent) +
+          ' unresolved.';
     return freeze({
       scenario: state.scenario,
       study: { title: source.title, subtitle: source.subtitle },
       verdict: verdict(state),
-      remaining: counts.repairable + counts.persistent,
+      remaining: (counts.unjudged || 0) + counts.repairable + counts.persistent,
       counts,
       complete,
       summary,
       pointsNote: POINTS_NOTE,
-      groups: DEBRIEF_STATUSES.map((s) => ({
+      ...(state.predictions && {
+        predictions: {
+          total: storiesOf(source).filter((s) => s.story.finding).length,
+          made: made.length,
+          correct: made.filter((s) => state.predictions[s.key] === s.kind)
+            .length,
+        },
+      }),
+      groups: DEBRIEF_STATUSES.filter((s) => s.id in counts).map((s) => ({
         ...s,
         points: counts[s.id],
         rows: list.filter((r) => r.status === s.id),
@@ -6390,14 +6578,16 @@ void main() {
     });
   }
 
-  function transition(state, id, kind) {
+  function transition(state, id, kind, guess) {
     assertState(state);
     const bug = state.bugs.find((b) => b.id === id);
     if (!bug) throw new RangeError('Unknown bug: ' + id);
+    const waiting = unjudged(bug, state);
     if (
       (kind === 'reveal' && bug.seen) ||
       (kind === 'clear' &&
-        (bug.cleared || !bug.seen || bug.kind !== 'clearable'))
+        (bug.cleared || !bug.seen || bug.kind !== 'clearable' || waiting)) ||
+      (kind === 'predict' && (!bug.seen || !waiting))
     )
       return freeze({ state, event: null });
     const before = total(state),
@@ -6406,7 +6596,14 @@ void main() {
           ? { ...b, seen: true, cleared: kind === 'clear' || b.cleared }
           : { ...b },
       );
-    const text = getBugText(bug, state);
+    const predictions =
+      kind === 'predict'
+        ? { ...state.predictions, [storyKey(bug)]: guess }
+        : state.predictions;
+    const text = getBugText(
+      bug,
+      predictions ? { ...state, predictions } : state,
+    );
     const event = {
       kind,
       bugId: id,
@@ -6415,18 +6612,32 @@ void main() {
       before,
       after: before - (kind === 'clear' ? 1 : 0),
       ...text,
+      ...(kind === 'predict' && { guess, correct: guess === bug.kind }),
     };
     const next = {
       scenario: state.scenario,
       bugs,
       history: [...state.history, event],
+      ...(predictions && { predictions }),
     };
     return freeze({ state: next, event });
   }
   const reveal = (state, id) => transition(state, id, 'reveal');
   const clear = (state, id) => transition(state, id, 'clear');
+  // One call settles every bug of that story, and it cannot be changed.
+  function predict(state, id, guess) {
+    if (!KINDS.includes(guess))
+      throw new RangeError('Unknown prediction: ' + guess);
+    return transition(state, id, 'predict', guess);
+  }
   function verdict(state) {
     assertState(state);
+    // The verdict would give calls away, so it waits for them.
+    if (state.bugs.some((b) => unjudged(b, state)))
+      return freeze({
+        heading: 'Your calls come first',
+        subtitle: 'Predict each concern to see what this study can repair.',
+      });
     const { heading, subtitle } = config(state.scenario).verdicts.find(
       (v) => !v.untilRepaired || repairPending(state, v.untilRepaired),
     );
@@ -6442,6 +6653,8 @@ void main() {
     scores,
     reveal,
     clear,
+    predict,
+    awaitsPrediction,
     verdict,
     getBugText,
     getBugDetails,
@@ -6465,6 +6678,31 @@ void main() {
     }
     return h >>> 0;
   };
+  // A bug's kind picks its look. A kind that is still withheld is drawn pale.
+  const LOOKS = {
+    clearable: {
+      body: 'cyan',
+      eye: 'cyanEye',
+      legs: '#6dcee2',
+      reticle: '#b1f2ff',
+      label: 'blue, one body target per press',
+    },
+    persistent: {
+      body: 'coral',
+      eye: 'coralEye',
+      legs: '#d57d81',
+      reticle: '#ffc0ac',
+      label: 'coral, reveal only',
+    },
+    unknown: {
+      body: 'pale',
+      eye: 'paleEye',
+      legs: '#cfc8b0',
+      reticle: '#f3ecd4',
+      label: 'not yet judged',
+    },
+  };
+  const lookOf = (kind) => LOOKS[kind] || LOOKS.persistent;
   class BleileScene {
     constructor(host, options = {}) {
       this.host = host;
@@ -6657,6 +6895,14 @@ void main() {
           clearcoatRoughness: 0.15,
           envMapIntensity: 0.1,
         }),
+        pale: new T.MeshPhysicalMaterial({
+          color: '#9a9482',
+          roughness: 0.22,
+          metalness: 0.25,
+          clearcoat: 1,
+          clearcoatRoughness: 0.13,
+          envMapIntensity: 0.1,
+        }),
         cyanEye: new T.MeshStandardMaterial({
           color: '#a2ecf7',
           emissive: '#3b9db7',
@@ -6670,6 +6916,13 @@ void main() {
           emissiveIntensity: 0.13,
           roughness: 0.18,
           metalness: 0.1,
+        }),
+        paleEye: new T.MeshStandardMaterial({
+          color: '#f3eedc',
+          emissive: '#8f8a70',
+          emissiveIntensity: 0.15,
+          roughness: 0.18,
+          metalness: 0.11,
         }),
         pupil: new T.MeshStandardMaterial({
           color: '#080e1b',
@@ -6711,7 +6964,15 @@ void main() {
         }),
       };
       this.initLightMask();
-      for (const name of ['cyan', 'coral', 'cyanEye', 'coralEye', 'pupil'])
+      for (const name of [
+        'cyan',
+        'coral',
+        'pale',
+        'cyanEye',
+        'coralEye',
+        'paleEye',
+        'pupil',
+      ])
         this.maskBugMaterial(this.materials[name]);
       this.architecture = new T.Group();
       this.occluders = [];
@@ -7222,18 +7483,13 @@ void main() {
         revealSent: !!bug.seen,
         clearSent: !!bug.cleared,
       };
-      n.body = new T.Mesh(
-        this.shared.body,
-        this.materials[bug.kind === 'clearable' ? 'cyan' : 'coral'],
-      );
+      const look = lookOf(bug.kind);
+      n.body = new T.Mesh(this.shared.body, this.materials[look.body]);
       n.body.castShadow = true;
       n.body.receiveShadow = true;
       n.body.userData.bugId = bug.id;
       group.add(n.body);
-      n.eye = new T.Mesh(
-        this.shared.eye,
-        this.materials[bug.kind === 'clearable' ? 'cyanEye' : 'coralEye'],
-      );
+      n.eye = new T.Mesh(this.shared.eye, this.materials[look.eye]);
       group.add(n.eye);
       n.pupil = new T.Mesh(this.shared.pupil, this.materials.pupil);
       group.add(n.pupil);
@@ -7246,7 +7502,7 @@ void main() {
       n.legs = new T.LineSegments(
         geometry,
         new T.LineBasicMaterial({
-          color: bug.kind === 'clearable' ? '#6dcee2' : '#d57d81',
+          color: look.legs,
           transparent: false,
           opacity: 1,
           depthWrite: true,
@@ -7356,17 +7612,17 @@ void main() {
           n.worldRadius * 0.09,
         );
         n.pupil.position.set(0, 0, n.worldRadius * 1.48);
-        n.body.material =
-          this.materials[bug.kind === 'clearable' ? 'cyan' : 'coral'];
-        n.eye.material =
-          this.materials[bug.kind === 'clearable' ? 'cyanEye' : 'coralEye'];
+        const look = lookOf(bug.kind);
+        n.body.material = this.materials[look.body];
+        n.eye.material = this.materials[look.eye];
+        n.legColor.set(look.legs);
         n.group.visible = !n.cleared && this.intersectsLight(n);
         if (n.button) {
           n.button.hidden = !!bug.cleared;
           n.button.setAttribute(
             'aria-label',
             bug.seen
-              ? `${bug.component}: ${bug.kind === 'clearable' ? 'blue, one body target per press' : 'coral, reveal only'}`
+              ? `${bug.component}: ${look.label}`
               : `Search glasshouse region ${index + 1}`,
           );
         }
@@ -7940,9 +8196,7 @@ void main() {
       this.reticle.position.copy(n.group.position);
       this.reticle.quaternion.copy(n.group.quaternion);
       this.reticle.scale.setScalar(n.worldRadius * 1.45);
-      this.reticle.material.color.set(
-        n.kind === 'clearable' ? '#b1f2ff' : '#ffc0ac',
-      );
+      this.reticle.material.color.set(lookOf(n.kind).reticle);
       this.reticle.material.opacity = this.focus ? 1 : 0.6;
     }
     getDebug() {
@@ -8113,11 +8367,15 @@ void main() {
   'use strict';
   const $ = (id) => document.getElementById(id),
     G = window.BleileGame;
+  // Opened with ?predict, a study that has findings asks for a call on each
+  // concern before its color is shown.
+  const predict = new URLSearchParams(location.search).has('predict');
   const states = Object.fromEntries(
-    G.SCENARIOS.map((s) => [s.id, G.initialState(s.id)]),
+    G.SCENARIOS.map((s) => [s.id, G.initialState(s.id, { predict })]),
   );
   let state = states.rwd,
     selected = null,
+    asked = null,
     sound = false,
     audio = null,
     light = true,
@@ -8128,6 +8386,9 @@ void main() {
     hintTimer,
     cycle = 0,
     renderQueued = false;
+  // A bug that still awaits the player's call shows no color.
+  const kindOf = (bug) =>
+    predict && G.awaitsPrediction(bug, state) ? 'unknown' : bug.kind;
   const icon =
     '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M9 26 29 9l26 10v32L31 59 9 49Z M9 26l22 10 24-17 M31 36v23 M29 9l2 27 M9 26v23 M18 18l23 9v28 M40 13l-19 18v23 M9 39l22 10 24-16"/><path d="m18 46 10 4v-9l-10-4z" opacity=".3"/></svg>';
   for (const [i, s] of G.SCENARIOS.entries()) {
@@ -8199,13 +8460,17 @@ void main() {
       b.tabIndex = b.dataset.bug === id ? 0 : -1;
   }
   function updateFocusButton(bug) {
-    const blue = !!bug && bug.kind === 'clearable' && !bug.cleared,
+    const kind = bug && kindOf(bug),
+      waiting = kind === 'unknown',
+      blue = kind === 'clearable' && !bug.cleared,
       canClear = blue && light;
-    $('focus').disabled = !canClear;
+    $('focus').disabled = !(canClear || (waiting && light));
     $('focus-label').textContent = canClear
       ? 'Hold to neutralize'
-      : blue
-        ? 'Turn spotlight on'
+      : blue || waiting
+        ? light
+          ? 'Predict its color'
+          : 'Turn spotlight on'
         : bug
           ? 'Reveal only'
           : 'Aim at a bug';
@@ -8215,9 +8480,13 @@ void main() {
         ? 'Hold to neutralize this blue bug'
         : blue
           ? 'Turn the spotlight on to neutralize this blue bug'
-          : bug
-            ? 'This coral bug cannot be neutralized with the available tools'
-            : 'Aim at a blue bug to neutralize it',
+          : waiting
+            ? light
+              ? 'Predict whether this bug is blue or coral'
+              : 'Turn the spotlight on to predict this bug'
+            : bug
+              ? 'This coral bug cannot be neutralized with the available tools'
+              : 'Aim at a blue bug to neutralize it',
     );
   }
   function positionInspection() {
@@ -8244,16 +8513,19 @@ void main() {
     card.style.top = world.offsetTop + y + 'px';
   }
   function showInspection(bug) {
-    const detail = G.getBugDetails(bug, state);
-    $('inspection').dataset.kind = bug.kind;
+    const detail = G.getBugDetails(bug, state),
+      kind = kindOf(bug);
+    $('inspection').dataset.kind = kind;
     $('inspection').dataset.bug = bug.id;
     $('inspect-name').textContent = detail.label;
     $('inspect-score').textContent = detail.score + ' / 10';
     $('inspect-reason').textContent = detail.reason;
     $('inspect-kind').textContent =
-      bug.kind === 'clearable'
+      kind === 'clearable'
         ? 'Blue · available repair'
-        : 'Coral · reveal only';
+        : kind === 'unknown'
+          ? 'Pale · not yet judged'
+          : 'Coral · reveal only';
     $('inspect-action').textContent = detail.action;
     $('inspect-size').textContent = detail.sizeNote;
     $('inspection').hidden = false;
@@ -8274,18 +8546,21 @@ void main() {
     selected = id;
     syncTabStop();
     const c = G.COMPONENTS.find((c) => c.id === bug.component),
-      copy = G.getBugText(bug, state);
-    $('bug-mark').dataset.kind = bug.kind;
+      copy = G.getBugText(bug, state),
+      kind = kindOf(bug);
+    $('bug-mark').dataset.kind = kind;
     $('focus-title').textContent =
       c.short +
       ' · ' +
-      (bug.kind === 'clearable'
-        ? light
-          ? 'hold to neutralize'
-          : 'spotlight needed'
-        : 'reveal only');
+      (kind === 'persistent'
+        ? 'reveal only'
+        : !light
+          ? 'spotlight needed'
+          : kind === 'clearable'
+            ? 'hold to neutralize'
+            : 'predict its color');
     $('focus-subtitle').textContent =
-      bug.kind === 'clearable' ? copy.title : copy.subtitle;
+      kind === 'clearable' ? copy.title : copy.subtitle;
     updateFocusButton(bug);
     showInspection(bug);
   }
@@ -8300,7 +8575,7 @@ void main() {
     else render();
     if (kind === 'clear') {
       const done = !state.bugs.some(
-        (b) => b.kind === 'clearable' && !b.cleared,
+        (b) => kindOf(b) !== 'persistent' && !b.cleared,
       );
       tone('clear');
       toast(
@@ -8326,6 +8601,45 @@ void main() {
         updateFocusButton(null);
       }
     }
+    dismissHint();
+  }
+  // The call is made in a dialog, so the pointer is free to choose.
+  function askPrediction(bug) {
+    const detail = G.getBugDetails(bug, state);
+    setFocusing(false);
+    asked = bug.id;
+    $('predict-title').textContent = detail.label;
+    $('predict-finding').textContent = detail.reason;
+    $('predict-ask').hidden = false;
+    $('predict-result').hidden = true;
+    $('predict').showModal();
+    $('predict-title').focus();
+  }
+  function answerPrediction(guess) {
+    transition('reveal', asked);
+    const result = G.predict(state, asked, guess);
+    if (!result.event) {
+      $('predict').close();
+      return;
+    }
+    state = result.state;
+    states[state.scenario] = state;
+    render();
+    if (selected === asked) select(asked);
+    const bug = state.bugs.find((b) => b.id === asked),
+      detail = G.getBugDetails(bug, state);
+    $('predict-result').dataset.kind = bug.kind;
+    $('predict-outcome').textContent =
+      (result.event.correct ? 'Correct. ' : 'Not this time. ') +
+      (bug.kind === 'clearable'
+        ? 'It is blue: this study can clear it.'
+        : 'It is coral: it stays.');
+    $('predict-reason').textContent = detail.reason;
+    $('predict-action').textContent =
+      detail.status + ': ' + detail.action + '.';
+    $('predict-ask').hidden = true;
+    $('predict-result').hidden = false;
+    $('predict-continue').focus();
     dismissHint();
   }
   function scheduleRender() {
@@ -8372,6 +8686,9 @@ void main() {
     }
     scene.setState({
       ...state,
+      bugs: predict
+        ? state.bugs.map((b) => ({ ...b, kind: kindOf(b) }))
+        : state.bugs,
       scores: profile,
       background: config.background,
     });
@@ -8395,7 +8712,19 @@ void main() {
     const count = el('span', 'debrief-row-count', String(row.points));
     count.setAttribute('aria-label', points(row.points));
     summary.append(document.createTextNode(row.title + ' '), count);
-    details.append(summary, el('p', '', row.reason), el('p', '', row.matters));
+    details.append(summary);
+    if (row.status !== 'unjudged') details.append(el('p', '', row.reason));
+    details.append(el('p', '', row.matters));
+    if (row.guess)
+      details.append(
+        el(
+          'p',
+          '',
+          'You called it ' +
+            (row.guess === 'clearable' ? 'blue' : 'coral') +
+            (row.correct ? ': correct.' : ': not this time.'),
+        ),
+      );
     if (row.status === 'repaired') {
       const remaining =
         row.sameComponent.repairable + row.sameComponent.persistent;
@@ -8454,27 +8783,40 @@ void main() {
     $('debrief-verdict').textContent =
       d.verdict.heading + '. ' + d.verdict.subtitle;
     $('debrief-summary').textContent = d.summary;
+    const calls = d.predictions,
+      left = calls ? calls.total - calls.made : 0;
+    $('debrief-calls').hidden = !calls?.total;
+    if (calls?.total)
+      $('debrief-calls').textContent = [
+        calls.made &&
+          'Your calls: ' + calls.correct + ' of ' + calls.made + ' correct.',
+        left && left + (left === 1 ? ' call' : ' calls') + ' still to make.',
+      ]
+        .filter(Boolean)
+        .join(' ');
     $('debrief-note').textContent = d.pointsNote;
     box.replaceChildren(
-      ...d.groups.map((group) => {
-        const section = el('section', 'debrief-group'),
-          heading = el('h3'),
-          id = 'debrief-' + group.id;
-        section.dataset.status = group.id;
-        heading.id = id;
-        section.setAttribute('aria-labelledby', id);
-        heading.append(
-          el('span', '', group.heading),
-          el('span', 'debrief-count', points(group.points)),
-        );
-        section.append(heading);
-        if (group.rows.length) {
-          const list = el('ul', 'debrief-rows');
-          list.append(...group.rows.map(debriefRow));
-          section.append(list);
-        }
-        return section;
-      }),
+      ...d.groups
+        .filter((group) => group.id !== 'unjudged' || group.points)
+        .map((group) => {
+          const section = el('section', 'debrief-group'),
+            heading = el('h3'),
+            id = 'debrief-' + group.id;
+          section.dataset.status = group.id;
+          heading.id = id;
+          section.setAttribute('aria-labelledby', id);
+          heading.append(
+            el('span', '', group.heading),
+            el('span', 'debrief-count', points(group.points)),
+          );
+          section.append(heading);
+          if (group.rows.length) {
+            const list = el('ul', 'debrief-rows');
+            list.append(...group.rows.map(debriefRow));
+            section.append(list);
+          }
+          return section;
+        }),
     );
   }
   function syncAvailability() {
@@ -8543,14 +8885,24 @@ void main() {
     focusing = value;
     scene.setFocusing(value);
     $('focus').classList.toggle('active', value);
+    // A press on an unjudged bug asks for the call instead of starting a repair.
+    const bug = value && state.bugs.find((b) => b.id === selected);
+    if (bug && kindOf(bug) === 'unknown') askPrediction(bug);
   }
   function findNext() {
     if (!scene.getDebug().available || $('scene').hidden) return;
     const remaining = state.bugs.filter((b) => !b.cleared);
     if (!remaining.length) return;
     const unseen = remaining.filter((b) => !b.seen);
-    const blue = remaining.filter((b) => b.kind === 'clearable');
-    const pool = unseen.length ? unseen : blue.length ? blue : remaining;
+    const waiting = remaining.filter((b) => kindOf(b) === 'unknown');
+    const blue = remaining.filter((b) => kindOf(b) === 'clearable');
+    const pool = unseen.length
+      ? unseen
+      : waiting.length
+        ? waiting
+        : blue.length
+          ? blue
+          : remaining;
     const b = pool[cycle % pool.length];
     cycle++;
     setLight(true);
@@ -8560,10 +8912,14 @@ void main() {
     $('announcement').textContent =
       G.COMPONENTS.find((c) => c.id === b.component).short +
       '. ' +
-      (b.kind === 'clearable'
+      (kindOf(b) === 'clearable'
         ? 'Blue. Hold Space to clear.'
-        : 'Coral. Reveal only.');
+        : kindOf(b) === 'unknown'
+          ? 'Not yet judged. Press Space to predict its color.'
+          : 'Coral. Reveal only.');
   }
+  for (const b of document.querySelectorAll('[data-predict]'))
+    b.addEventListener('click', () => answerPrediction(b.dataset.predict));
   $('find-next').addEventListener('click', findNext);
   $('world').addEventListener('pointerdown', () => {
     if (light) setFocusing(true);
@@ -8625,7 +8981,7 @@ void main() {
     if (sound) tone('start');
   });
   $('restart').addEventListener('click', () => {
-    states[state.scenario] = G.initialState(state.scenario);
+    states[state.scenario] = G.initialState(state.scenario, { predict });
     scene.setState({ scenario: 'reset', bugs: [] });
     switchScenario(state.scenario);
     $('announcement').textContent = 'This house has been reset.';
@@ -8656,6 +9012,11 @@ void main() {
       )
         dialog.close();
     });
+  if (predict) {
+    $('legend-pale').hidden = false;
+    $('beam-instruction').textContent =
+      'Inspect a bug and predict its color. Then hold on blue to clear.';
+  }
   render();
   hintTimer = setTimeout(dismissHint, 6000);
   window.BleileApp = {

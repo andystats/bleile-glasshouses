@@ -48,6 +48,7 @@
               <div class="legend" aria-label="Bug types">
                 <span><i class="cyan"></i>Blue · clear</span>
                 <span><i class="coral"></i>Coral · reveal</span>
+                <span id="legend-pale" hidden><i class="pale"></i>Pale · predict</span>
               </div>
             </div>
           </section>
@@ -126,12 +127,36 @@
       <p class="lead" id="profile-subtitle"></p>
       <p id="debrief-verdict"></p>
       <p id="debrief-summary"></p>
+      <p id="debrief-calls" hidden></p>
       <p id="debrief-note" class="debrief-note"></p>
       <div id="debrief-groups"></div>
       <details class="debrief-profile">
         <summary>Bleile points by component</summary>
         <div id="profile-bars"></div>
       </details>
+    </dialog>
+    <dialog id="predict" aria-labelledby="predict-title">
+      <div class="dialog-head">
+        <span class="eyebrow">YOUR CALL</span>
+        <button data-close="predict" aria-label="Close this prediction">Close ×</button>
+      </div>
+      <h2 id="predict-title" tabindex="-1"></h2>
+      <p class="lead" id="predict-finding"></p>
+      <div id="predict-ask">
+        <p>Will this one clear, or will it stay? Blue means the information or checks available in this study can address it. Coral means they cannot.</p>
+        <div class="predict-choices">
+          <button data-predict="clearable"><i class="cyan"></i>Blue · it clears</button>
+          <button data-predict="persistent"><i class="coral"></i>Coral · it stays</button>
+        </div>
+      </div>
+      <div id="predict-result" aria-live="polite" hidden>
+        <p id="predict-outcome"></p>
+        <p id="predict-reason"></p>
+        <p id="predict-action"></p>
+        <div class="predict-choices">
+          <button id="predict-continue" data-close="predict">Continue</button>
+        </div>
+      </div>
     </dialog>
     <dialog id="notes" aria-labelledby="notes-title">
       <div class="dialog-head">

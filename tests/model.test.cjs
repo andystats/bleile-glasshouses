@@ -63,6 +63,13 @@ test('every study’s content is complete: each story carries points and text, a
           assert(kind === 'persistent' && stories.clearable, where);
       }
     }
+    const findings = Object.values(s.concerns)
+      .flatMap((stories) => Object.values(stories))
+      .map((story) => story.finding);
+    assert(
+      findings.every((f) => f && f.length > 20) || !findings.some(Boolean),
+      s.id + ' has a finding for every story or for none',
+    );
     const last = s.verdicts.at(-1);
     assert.equal(last.untilRepaired, undefined, s.id);
     for (const v of s.verdicts) {
@@ -712,4 +719,162 @@ test('debrief is immutable and says plainly what Bleile points are; no visible d
   assert.match(html, /<title>Bleile · Glasshouses<\/title>/);
   assert.match(html, /id="profile-open"[^>]*>Review this round/);
   assert.match(html, /Bleile points<br>remaining/);
+});
+
+const predicting = () => G.initialState('rwd', { predict: true });
+const storyFor = (s, bug) =>
+  G.SCENARIOS.find((c) => c.id === s.scenario).concerns[bug.component][
+    bug.kind
+  ];
+
+test('a round played with predictions withholds every story of the records, and an ordinary round is unchanged', () => {
+  const classic = G.initialState(),
+    s = predicting();
+  assert.deepEqual(G.initialState('rwd', {}), classic);
+  assert.equal('predictions' in classic, false);
+  assert.deepEqual(s.predictions, {});
+  assert.deepEqual(s.bugs, classic.bugs);
+  for (const bug of s.bugs) {
+    const story = storyFor(s, bug),
+      detail = G.getBugDetails(bug, s),
+      text = G.getBugText(bug, s);
+    assert.equal(G.awaitsPrediction(bug, s), true);
+    assert.equal(G.awaitsPrediction(bug, classic), false);
+    assert.equal(detail.status, 'Not yet judged');
+    assert.equal(detail.reason, story.finding);
+    assert.deepEqual(
+      Object.keys(detail),
+      Object.keys(G.getBugDetails(bug, classic)),
+    );
+    for (const shown of [...Object.values(detail), ...Object.values(text)])
+      for (const answer of [story.title, story.reason, story.action])
+        assert.notEqual(shown, answer);
+    assert.deepEqual(text, G.getBugText(s.bugs[0], s));
+    assert.equal(G.clear(G.reveal(s, bug.id).state, bug.id).event, null);
+  }
+  for (const id of ['rct', 'poor']) {
+    const other = G.initialState(id, { predict: true });
+    assert(other.bugs.every((b) => !G.awaitsPrediction(b, other)));
+    assert.deepEqual(clearAll(other).bugs, clearAll(G.initialState(id)).bugs);
+  }
+});
+
+test('one call settles every bug of its story, right or wrong, and cannot be changed', () => {
+  let s = predicting();
+  const of = (kind) =>
+    s.bugs.filter((b) => b.component === 'confounding' && b.kind === kind);
+  const [blue, coral] = [of('clearable')[0], of('persistent')[0]];
+  assert.equal(G.predict(s, blue.id, 'clearable').event, null);
+  s = G.reveal(s, blue.id).state;
+  const before = G.scores(s),
+    out = G.predict(s, blue.id, 'persistent');
+  assert.deepEqual(
+    [out.event.kind, out.event.guess, out.event.correct, out.event.delta],
+    ['predict', 'persistent', false, 0],
+  );
+  assert.equal(out.event.title, G.getBugText(blue, G.initialState()).title);
+  assert(Object.isFrozen(out.state.predictions));
+  s = out.state;
+  assert.deepEqual(s.predictions, { 'confounding-clearable': 'persistent' });
+  assert.deepEqual(G.scores(s), before);
+  assert(of('clearable').every((b) => !G.awaitsPrediction(b, s)));
+  assert(of('persistent').every((b) => G.awaitsPrediction(b, s)));
+  assert.equal(G.predict(s, blue.id, 'clearable').event, null);
+  assert.equal(G.getBugDetails(blue, s).status, 'Available repair');
+  assert.match(G.getBugDetails(blue, s).reason, /performance status/i);
+  s = G.clear(s, blue.id).state;
+  assert.equal(G.total(s), 23);
+  assert.deepEqual(s.predictions, { 'confounding-clearable': 'persistent' });
+  s = G.predict(G.reveal(s, coral.id).state, coral.id, 'persistent').state;
+  assert.equal(s.history.at(-1).correct, true);
+  assert.equal(G.getBugDetails(coral, s).status, 'Unresolved with these tools');
+  assert.throws(() => G.predict(s, coral.id, 'maybe'), /Unknown prediction/);
+  assert.throws(() => G.predict(s, 'imaginary', 'clearable'), /Unknown bug/);
+  assert.throws(
+    () => G.total({ ...s, predictions: { 'question-persistent': 'maybe' } }),
+    /Invalid predictions/,
+  );
+  assert.throws(
+    () => G.total({ ...s, predictions: null }),
+    /Invalid predictions/,
+  );
+});
+
+test('the round review lists unjudged findings apart, gives nothing away, and counts the calls', () => {
+  let s = predicting(),
+    d = G.debrief(s);
+  assert.deepEqual(
+    d.groups.map((g) => g.id),
+    ['unjudged', 'repairable', 'persistent', 'repaired'],
+  );
+  assert.deepEqual(d.counts, {
+    unjudged: 24,
+    repairable: 0,
+    repaired: 0,
+    persistent: 0,
+  });
+  assert.deepEqual(d.predictions, { total: 13, made: 0, correct: 0 });
+  assert.equal(d.remaining, 24);
+  assert.equal(d.complete, false);
+  assert.match(d.summary, /24 Bleile points still await your prediction/);
+  assert.equal(d.verdict.heading, 'Your calls come first');
+  assert.doesNotMatch(
+    JSON.stringify(d),
+    /Confounding obscures|Recover information/,
+  );
+  const waiting = group(d, 'unjudged').rows;
+  assert.equal(waiting.length, 13);
+  assert.equal(waiting.filter((r) => r.component === 'confounding').length, 2);
+  for (const r of waiting) {
+    const stories = Object.values(G.SCENARIOS[1].concerns[r.component]);
+    assert(stories.some((story) => story.finding === r.title));
+    assert.equal(r.reason, r.title);
+    assert.equal('guess' in r, false);
+    for (const story of stories)
+      for (const answer of [story.title, story.reason, story.action])
+        assert.notEqual(r.action, answer);
+  }
+  // Call every story blue: right for the four repairable stories only.
+  for (const bug of s.bugs)
+    s = G.predict(G.reveal(s, bug.id).state, bug.id, 'clearable').state;
+  d = G.debrief(s);
+  assert.deepEqual(d.counts, {
+    unjudged: 0,
+    repairable: 5,
+    repaired: 0,
+    persistent: 19,
+  });
+  assert.deepEqual(d.predictions, { total: 13, made: 13, correct: 3 });
+  assert.deepEqual(d.verdict, G.verdict(G.initialState()));
+  assert.deepEqual(group(d, 'unjudged').rows, []);
+  assert.deepEqual(
+    [
+      row(d, 'repairable', 'confounding').guess,
+      row(d, 'repairable', 'confounding').correct,
+      row(d, 'persistent', 'positivity').correct,
+    ],
+    ['clearable', true, false],
+  );
+  assert.match(d.summary, /No repairs yet/);
+  s = clearAll(s);
+  d = G.debrief(s);
+  assert.equal(d.complete, true);
+  assert.equal(row(d, 'repaired', 'confounding').correct, true);
+  // With every call made, the review reads as an ordinary one plus the calls.
+  const plain = (groups) =>
+    groups.map((g) => ({
+      ...g,
+      rows: g.rows.map(({ guess, correct, sameComponent, ...rest }) => rest),
+    }));
+  const ordinary = s.bugs.reduce(
+    (state, b) => G.reveal(state, b.id).state,
+    G.initialState(),
+  );
+  assert.deepEqual(
+    plain(d.groups.slice(1)),
+    plain(G.debrief(clearAll(ordinary)).groups),
+  );
+  const classic = G.debrief(G.initialState());
+  assert.equal('predictions' in classic, false);
+  assert(allRows(classic).every((r) => !('guess' in r)));
 });

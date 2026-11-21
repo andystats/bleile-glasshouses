@@ -7,6 +7,7 @@
   --gold: #e8c68d;
   --cyan: #7de6f3;
   --coral: #f3978c;
+  --pale: #e3dcc4;
   --line: #b9d6ca21;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
@@ -70,6 +71,9 @@ i.cyan {
 }
 i.coral {
   background: var(--coral);
+}
+i.pale {
+  background: var(--pale);
 }
 .sr-only {
   position: absolute;
@@ -302,6 +306,11 @@ i.coral {
   background: var(--coral);
   box-shadow: 0 0 15px #f3978c44;
 }
+.bug-mark[data-kind='unknown'] {
+  border: 0;
+  background: var(--pale);
+  box-shadow: 0 0 15px #e3dcc444;
+}
 .legend {
   display: flex;
   gap: 18px;
@@ -386,6 +395,9 @@ i.coral {
 }
 .inspect-card[data-kind='clearable'] .inspect-response > span {
   color: var(--cyan);
+}
+.inspect-card[data-kind='unknown'] .inspect-response > span {
+  color: var(--pale);
 }
 .inspect-response strong {
   display: block;
@@ -758,6 +770,54 @@ dd {
   line-height: 1.8;
 }
 
+/* The player calls a bug's color here before it is shown. */
+#predict {
+  max-width: 520px;
+}
+#predict-title {
+  outline: none;
+}
+.predict-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+.predict-choices button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8c68d55;
+  padding: 10px 20px;
+  border-radius: 3px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  background: #e8c68d0c;
+  min-height: 44px;
+}
+.predict-choices button:hover {
+  border-color: var(--gold);
+}
+.predict-choices i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.predict-choices i.coral {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+#predict-outcome {
+  font-size: 15px;
+  color: var(--coral);
+}
+#predict-result[data-kind='clearable'] #predict-outcome {
+  color: var(--cyan);
+}
+#predict-action {
+  color: var(--text);
+}
+
 /* Each concern and its lesson remain visible while the explanation is folded. */
 #profile {
   overflow-y: auto;
@@ -768,6 +828,7 @@ dd {
 }
 #profile .lead,
 #debrief-summary,
+#debrief-calls,
 #debrief-note {
   margin-block: 6px;
 }
@@ -787,6 +848,9 @@ dd {
   gap: 10px;
   margin: 0 0 4px;
   font-size: 14px;
+}
+.debrief-group[data-status='unjudged'] h3 {
+  color: var(--pale);
 }
 .debrief-group[data-status='repairable'] h3 {
   color: var(--cyan);
