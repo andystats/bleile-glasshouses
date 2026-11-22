@@ -35,6 +35,17 @@ npm run build
 
 The study wording and numbers are in `src/game-content.js`: the ten components and, for each study, its verdicts and concerns. A concern's `points` is the number of bugs it puts in the house. `src/game-model.js` holds the rules and reads every study from that file. The tests pin the current totals (5, 24 and 94) and check the starting total, final total and positivity figure that the notes dialog in `src/index.html` quotes for the observational example. Update the tests and reread that paragraph when the points change.
 
+Recorded sounds are optional. The build embeds any of these files it finds in `src/sounds/`, as short MP3s of at most 100 KB each:
+
+| File        | Plays when                                                    |
+| ----------- | ------------------------------------------------------------- |
+| `pop.mp3`   | a blue bug clears (in place of the built-in chime)            |
+| `blue.mp3`  | the player first looks at a blue bug                          |
+| `coral.mp3` | the player first looks at a coral bug                         |
+| `pale.mp3`  | the player first looks at a bug that awaits its prediction    |
+
+In a prediction round the blue or coral sound plays when the prediction is answered, so the sound never gives the color away. A slot with no file keeps the built-in sound, which is silence for all but the pop. Sound stays off until the player switches it on.
+
 The build preserves the source and writes identical `index.html` and `Bleile-in-the-Light.html` files. Three.js 0.187.0 is bundled locally; its license is embedded in the HTML and included in `THIRD_PARTY_LICENSES.txt`.
 
 GitHub Pages serves `index.html` from the root of `main`. Commit the rebuilt HTML with source changes. Local review artifacts and earlier prototypes are excluded from publication.

@@ -49,6 +49,30 @@ for (const [marker, file] of [
     throw new Error('Unexpected script close in ' + file);
   html = html.replace(marker, () => source);
 }
+// Embed the recording for each sound slot that has one in src/sounds. A slot
+// with no file keeps the game's built-in sound, or silence.
+const SOUND_SLOTS = ['pop', 'blue', 'coral', 'pale'],
+  soundDir = path.join(root, 'src', 'sounds'),
+  sounds = {};
+if (fs.existsSync(soundDir))
+  for (const file of fs.readdirSync(soundDir).sort()) {
+    if (file.startsWith('.')) continue;
+    const slot = path.parse(file).name;
+    if (!SOUND_SLOTS.includes(slot) || path.extname(file) !== '.mp3')
+      throw new Error(
+        `Unexpected file src/sounds/${file}. Use ${SOUND_SLOTS.map((s) => s + '.mp3').join(', ')}`,
+      );
+    const recording = fs.readFileSync(path.join(soundDir, file));
+    if (recording.length > 100 * 1024)
+      throw new Error(`src/sounds/${file} is over 100 KB. Trim it first`);
+    sounds[slot] = recording.toString('base64');
+  }
+if (html.split('/* GAME_SOUNDS */').length !== 2)
+  throw new Error('Missing or duplicate sounds marker');
+html = html.replace(
+  '/* GAME_SOUNDS */',
+  () => 'window.BleileSounds = ' + JSON.stringify(sounds) + ';',
+);
 if (/<(?:script|link)[^>]+(?:src|href)=/i.test(html))
   throw new Error('External runtime dependency found');
 const output = path.join(root, 'Bleile-in-the-Light.html');

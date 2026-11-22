@@ -22,6 +22,9 @@
 !/src/game-model.js
 !/src/scene.js
 !/src/app.js
+!/src/sounds/
+/src/sounds/*
+!/src/sounds/*.mp3
 !/tests/
 /tests/*
 !/tests/model.test.cjs

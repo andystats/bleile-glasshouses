@@ -8511,6 +8511,7 @@ void main() {
   window.BleileScene = BleileScene;
 })();
 </script>
+    <script>window.BleileSounds = {};</script>
     <script>(() => {
   'use strict';
   const $ = (id) => document.getElementById(id),
@@ -8521,6 +8522,8 @@ void main() {
   const states = Object.fromEntries(
     G.SCENARIOS.map((s) => [s.id, G.initialState(s.id, { predict })]),
   );
+  // The bugs in each house that have already had their first-look sound.
+  const heard = Object.fromEntries(G.SCENARIOS.map((s) => [s.id, new Set()]));
   let state = states.rwd,
     selected = null,
     asked = null,
@@ -8543,7 +8546,8 @@ void main() {
     G.unpredicted(bug, state) ? 'unpredicted' : bug.kind;
   const CLOSING =
     'Every available repair is done. Open Review this round for your closing debrief.';
-  // What the player reads for each kind of bug.
+  // What the player reads for each kind of bug. The color also names the
+  // sound slot for the first look at a bug of that kind.
   const KIND_COPY = {
     clearable: {
       color: 'blue',
@@ -8556,6 +8560,7 @@ void main() {
       found: 'Coral. Reveal only.',
     },
     unpredicted: {
+      color: 'pale',
       card: 'Pale · not yet predicted',
       found: 'Not yet predicted. Press Space to predict its color.',
     },
@@ -8591,14 +8596,40 @@ void main() {
     onClear: (id) => transition('clear', id),
     onSelect: select,
   });
-  function tone(kind) {
+  // The build embeds a recording for each sound slot it finds in src/sounds.
+  // A slot with no recording plays its chime, if it has one.
+  const CHIMES = { pop: [660, 880, 1320], start: [392, 587] };
+  const recordings = {};
+  function loadRecordings() {
+    for (const [slot, data] of Object.entries(window.BleileSounds)) {
+      if (slot in recordings) continue;
+      recordings[slot] = null;
+      const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+      // A recording that cannot be decoded leaves its slot on the chime.
+      audio
+        .decodeAudioData(bytes.buffer)
+        .then((buffer) => (recordings[slot] = buffer))
+        .catch(() => {});
+    }
+  }
+  function play(slot) {
     if (!sound) return;
     try {
       audio ||= new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === 'suspended') audio.resume();
+      loadRecordings();
+      if (recordings[slot]) {
+        const source = audio.createBufferSource(),
+          g = audio.createGain();
+        source.buffer = recordings[slot];
+        g.gain.value = 0.4;
+        source.connect(g);
+        g.connect(audio.destination);
+        source.start();
+        return;
+      }
       const at = audio.currentTime;
-      const notes = kind === 'clear' ? [660, 880, 1320] : [392, 587];
-      notes.forEach((frequency, i) => {
+      (CHIMES[slot] || []).forEach((frequency, i) => {
         const o = audio.createOscillator(),
           g = audio.createGain();
         o.type = 'sine';
@@ -8717,6 +8748,10 @@ void main() {
     const c = G.COMPONENTS.find((c) => c.id === bug.component),
       copy = G.getBugText(bug, state),
       kind = kindOf(bug);
+    if (!heard[state.scenario].has(id)) {
+      heard[state.scenario].add(id);
+      play(KIND_COPY[kind].color);
+    }
     $('bug-mark').dataset.kind = kind;
     $('focus-title').textContent =
       c.short +
@@ -8743,7 +8778,7 @@ void main() {
     else render();
     if (kind === 'clear') {
       const done = G.debrief(state).complete;
-      tone('clear');
+      play('pop');
       toast(
         '−1 ' +
           G.COMPONENTS.find((c) => c.id === bug.component).short +
@@ -8798,6 +8833,8 @@ void main() {
     syncAvailability();
     const bug = state.bugs.find((b) => b.id === asked),
       detail = G.getBugDetails(bug, state);
+    // The answer shows the bug's color, so its sound plays now.
+    play(KIND_COPY[bug.kind].color);
     $('predict-result').dataset.kind = bug.kind;
     $('predict-outcome').textContent =
       (event.correct ? 'Correct. ' : 'Not this time. ') +
@@ -9166,10 +9203,11 @@ void main() {
     sound = !sound;
     $('sound').textContent = sound ? 'Sound on' : 'Sound off';
     $('sound').setAttribute('aria-pressed', String(sound));
-    if (sound) tone('start');
+    if (sound) play('start');
   });
   $('restart').addEventListener('click', () => {
     states[state.scenario] = G.initialState(state.scenario, { predict });
+    heard[state.scenario].clear();
     scene.setState({ scenario: 'reset', bugs: [] });
     switchScenario(state.scenario);
     $('announcement').textContent = 'This house has been reset.';
